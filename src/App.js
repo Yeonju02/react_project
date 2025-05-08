@@ -1,24 +1,44 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { Route, Routes, useLocation } from 'react-router-dom';
+import { Box, CssBaseline } from '@mui/material';
+
+import Login from './pages/Login';
+import Join from './pages/Join';
+import Main from './pages/Main';
+import MyPage from './pages/MyPage';
+import PostAdd from './pages/PostAdd';
+import PostEdit from './pages/PostEdit';
+import PostView from './pages/PostView';
+import Message from './pages/Message';
+import EditProfile from './pages/EditProfile';
+import UserPage from './pages/UserPage';
+
+import Menu from './components/Menu';
 
 function App() {
+  const location = useLocation();
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/join' || location.pathname === '/';
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Box sx={{ display: 'flex' }}>
+      <CssBaseline />
+      {!isAuthPage && <Menu />}
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/join" element={<Join />} />
+          <Route path="/main" element={<Main />} />
+          <Route path="/mypage" element={<MyPage />} />
+          <Route path="/user/:userId" element={<UserPage />} />
+          <Route path="/post/add" element={<PostAdd />} />
+          <Route path="/post/edit/:postNo" element={<PostEdit />} />
+          <Route path="/post/:postNo" element={<PostView />} />
+          <Route path="/message" element={<Message />} />
+          <Route path="/edit-profile" element={<EditProfile />} />
+        </Routes>
+      </Box>
+    </Box>
   );
 }
 
