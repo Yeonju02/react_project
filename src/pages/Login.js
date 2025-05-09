@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 
 import loginSlide from '../assets/login-slide.png';
-import logo from '../assets/instagram-logo.png';
+import logo from '../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
 
 function Login() {
