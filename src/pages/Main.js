@@ -117,9 +117,28 @@ function Main() {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <LikeButton
-                    postNo={post.postNo}
-                    initialLiked={post.likedByMe}
-                    initialCount={post.likeCount}
+                  postNo={post.postNo}
+                  initialLiked={post.likedByMe}
+                  initialCount={post.likeCount}
+                  onLike={async () => {
+                    const token = localStorage.getItem('token');
+                    const senderId = JSON.parse(atob(token.split('.')[1])).userId;
+                    const receiverId = post.userId;
+
+                    if (senderId === receiverId) return; // 자기 자신에게는 알림 X
+
+                    await fetch('http://localhost:4000/notification', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        receiver_id: receiverId,
+                        sender_id: senderId,
+                        type: 'like',
+                        content: `${senderId}님이 회원님의 게시글을 좋아했습니다.`,
+                        target_post: post.postNo
+                      })
+                    });
+                  }}
                 />
                 <IconButton
                     size="small"

@@ -24,6 +24,7 @@ export default function Menu() {
   const [selected, setSelected] = useState('home');
   const [previousSelected, setPreviousSelected] = useState('home');
   const [showSearch, setShowSearch] = useState(false);
+  const [showNoti, setShowNoti] = useState(false);
 
   const handleMenuClick = (menu, path) => {
     if (menu === 'search') {
@@ -33,12 +34,26 @@ export default function Menu() {
       } else {
         setPreviousSelected(selected);
         setShowSearch(true);
+        setShowNoti(false); // 알림 닫기
         setSelected('search');
       }
+    } else if (menu === 'like') {
+      if (showNoti) {
+        setShowNoti(false);
+        setSelected(previousSelected);
+      } else {
+        setPreviousSelected(selected);
+        setShowNoti(true);
+        setShowSearch(false); // 검색 닫기
+        setSelected('like');
+      }
     } else {
-      setSelected(menu);
       setShowSearch(false);
-      if (path) navigate(path);
+      setShowNoti(false); // 슬라이드 전부 닫기
+      setSelected(menu);
+      if (path) {
+        navigate(path);
+      }
     }
   };
 
@@ -105,7 +120,7 @@ export default function Menu() {
         {/* 메뉴 항목 */}
         {renderItem('home', '홈', <HomeIcon fontSize='large' sx={{ color: iconColor('home'), ml : 0.1 }} />, '/main')}
         {renderItem('search', '검색', <SearchIcon fontSize='large' sx={{ color: iconColor('search'), ml : 0.2}} />)}
-        {renderItem('dm', '메시지', <SendIcon sx={{ color: iconColor('dm'), fontSize: 30, ml : 0.6, mb : 0.1 }} />, '/message')}
+        {renderItem('dm', '메시지', <SendIcon sx={{ color: iconColor('dm'), fontSize: 30, ml : 0.6, mb : 0.1 }} />, '/dm')}
         {renderItem('like', '알림', <FavoriteIcon sx={{ color: iconColor('like'), fontSize: 30, ml : 0.5 }} />)}
         {renderItem('add', '만들기', <AddBoxIcon sx={{ color: iconColor('add'), fontSize: 30, ml : 0.5, mb : 0.3 }} />, '/post/add')}
         {renderItem('mypage', '프로필', <Avatar src="/assets/profile.jpg" sx={{ width: 30, height: 30, ml: 0.7, border: selected === 'mypage' ? '2px solid black' : 'none' }} />, '/mypage')}
@@ -117,11 +132,31 @@ export default function Menu() {
       </Box>
 
       {/* 검색 슬라이드 */}
-      {showSearch && <SearchSlide open={showSearch} onClose={() => {
-        setShowSearch(false);
-        setSelected(previousSelected);
-      }} 
-      sidebarWidth={isWide ? 250 : 72}/>}
+      {showSearch && (
+        <SearchSlide
+          key="search"
+          open={showSearch}
+          onClose={() => {
+            setShowSearch(false);
+            setSelected(previousSelected);
+          }}
+          type="search"
+          sidebarWidth={isWide ? 250 : 72}
+        />
+      )}
+
+      {showNoti && (
+        <SearchSlide
+          key="noti"
+          open={showNoti}
+          onClose={() => {
+            setShowNoti(false);
+            setSelected(previousSelected);
+          }}
+          type="noti"
+          sidebarWidth={isWide ? 250 : 72}
+        />
+      )}
     </>
   );
 }

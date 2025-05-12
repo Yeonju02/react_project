@@ -3,7 +3,7 @@ import heartEmpty from '../assets/heart-empty.png';
 import heartFilled from '../assets/heart-filled.png';
 import '../styles/likeButton.css'; // 애니메이션용 CSS
 
-function LikeButton({ postNo, initialLiked, initialCount }) {
+function LikeButton({ postNo, initialLiked, initialCount, onLike  }) {
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialCount || 0);
   const [animate, setAnimate] = useState(false);
@@ -27,6 +27,10 @@ function LikeButton({ postNo, initialLiked, initialCount }) {
         setLiked(!liked);
         setLikeCount((prev) => prev + (liked ? -1 : 1));
         if (!liked) triggerAnimation();
+
+        if (!liked && typeof onLike === 'function') {
+          onLike(); // 외부로 알림 콜백 전달
+        }
       }
     } catch (err) {
       console.error('좋아요 처리 오류:', err);

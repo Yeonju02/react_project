@@ -9,7 +9,7 @@ import MyPage from './pages/MyPage';
 import PostAdd from './pages/PostAdd';
 import PostEdit from './pages/PostEdit';
 import PostView from './pages/PostView';
-import Message from './pages/Message';
+import Dm from './pages/Dm';
 import EditProfile from './pages/EditProfile';
 import UserPage from './pages/UserPage';
 
@@ -34,7 +34,7 @@ function App() {
           <Route path="/post/add" element={<PostAdd />} />
           <Route path="/post/edit/:postNo" element={<PostEdit />} />
           <Route path="/post/:postNo" element={<PostView />} />
-          <Route path="/message" element={<Message />} />
+          <Route path="/dm" element={<Dm />} />
           <Route path="/edit-profile" element={<EditProfile />} />
         </Routes>
       </Box>
