@@ -4,24 +4,16 @@ import {
 } from '@mui/material';
 import PostDialog from './PostDialog';
 import { useNavigate } from 'react-router-dom';
-import NotificationSlide from './NotificationSlide';
 
-// (중략)
-function SearchSlide({ open, onClose, sidebarWidth = 72, type = 'search' }) {
+function SearchSlide({ open, onClose, sidebarWidth = 72 }) {
   const [keyword, setKeyword] = useState('');
   const [tab, setTab] = useState(0);
   const [results, setResults] = useState([]);
-  const [notifications, setNotifications] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const navigate = useNavigate();
 
-  const token = localStorage.getItem('token');
-  const userId = token ? JSON.parse(atob(token.split('.')[1])).userId : '';
-
-  // 🔍 검색용
   useEffect(() => {
-    if (type !== 'search') return;
     if (!keyword) {
       setResults([]);
       return;
@@ -32,16 +24,7 @@ function SearchSlide({ open, onClose, sidebarWidth = 72, type = 'search' }) {
       .then(res => res.json())
       .then(data => setResults(data.list || []))
       .catch(err => console.error('검색 오류:', err));
-  }, [keyword, tab, type]);
-
-  // ❤️ 알림용
-  useEffect(() => {
-    if (type !== 'noti' || !userId) return;
-    fetch("http://localhost:4000/notification/" + userId)
-      .then(res => res.json())
-      .then(data => setNotifications(data || []))
-      .catch(err => console.error('알림 오류:', err));
-  }, [type]);
+  }, [keyword, tab]);
 
   const handleCardClick = async (item) => {
     try {
@@ -74,30 +57,26 @@ function SearchSlide({ open, onClose, sidebarWidth = 72, type = 'search' }) {
       >
         <Box sx={{ p: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-            {type === 'search' ? '검색' : '알림'}
+            검색
           </Typography>
 
-          {type === 'search' && (
-            <>
-              <TextField
-                fullWidth
-                placeholder="검색"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                variant="outlined"
-                size="small"
-              />
+          <TextField
+            fullWidth
+            placeholder="검색"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            variant="outlined"
+            size="small"
+          />
 
-              <Tabs value={tab} onChange={(_, newVal) => setTab(newVal)} centered sx={{ mt: 2 }}>
-                <Tab label="게시글" />
-                <Tab label="사용자" />
-              </Tabs>
+          <Tabs value={tab} onChange={(_, newVal) => setTab(newVal)} centered sx={{ mt: 2 }}>
+            <Tab label="게시글" />
+            <Tab label="사용자" />
+          </Tabs>
 
-              <Divider sx={{ my: 1 }} />
-            </>
-          )}
+          <Divider sx={{ my: 1 }} />
 
-          {type === 'search' && (results.length === 0 ? (
+          {results.length === 0 ? (
             <Typography sx={{ mt: 4, textAlign: 'center', color: 'gray' }}>
               검색 결과가 없습니다.
             </Typography>
@@ -171,32 +150,7 @@ function SearchSlide({ open, onClose, sidebarWidth = 72, type = 'search' }) {
                 )}
               </Box>
             ))
-          ))}
-
-          {type === 'noti' && notifications.map((noti, idx) => (
-            <Box key={idx} 
-              onClick={() => {
-                  // 게시글 상세 페이지로 이동
-                  if (noti.target_post) navigate(`/post/${noti.target_post}`);
-                  onClose();
-                }}
-              sx={{
-                p: 1.5,
-                mb: 1,
-                border: '1px solid #eee',
-                borderRadius: 2,
-                bgcolor: noti.is_read === 'N' ? '#f9f5ff' : '#fff'
-              }}
-            >
-
-
-              
-              <Typography variant="body2">{noti.content}</Typography>
-              <Typography variant="caption" color="textSecondary">
-                {new Date(noti.created_at).toLocaleString()}
-              </Typography>
-            </Box>
-          ))}
+          )}
 
           {selectedPost && (
             <PostDialog
@@ -212,4 +166,3 @@ function SearchSlide({ open, onClose, sidebarWidth = 72, type = 'search' }) {
 }
 
 export default SearchSlide;
-

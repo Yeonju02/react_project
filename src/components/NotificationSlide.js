@@ -1,43 +1,139 @@
 import React, { useEffect, useState } from 'react';
-import { Slide, Box, Typography, Avatar, Divider } from '@mui/material';
+import { Slide, Box, Typography, Avatar} from '@mui/material';
 import { jwtDecode } from 'jwt-decode';
+import { formatDistanceToNow } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import PostDialog from './PostDialog';
 
 export default function NotificationSlide({ open, onClose, sidebarWidth = 72 }) {
   const [notifications, setNotifications] = useState([]);
   const token = localStorage.getItem('token');
   const userId = token ? jwtDecode(token).userId : '';
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!userId || !open) return;
-    fetch(`http://localhost:4000/notification/${userId}`)
+    fetch('http://localhost:4000/notification/' + userId)
       .then(res => res.json())
       .then(data => setNotifications(data));
-  }, [open]);
+  }, [userId, open]);
 
   return (
-    <Slide direction="right" in={open} mountOnEnter unmountOnExit>
-      <Box
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: sidebarWidth,
-          width: 300,
-          height: '100%',
-          bgcolor: 'white',
-          boxShadow: 4,
-          zIndex: 1300,
-          overflowY: 'auto'
-        }}
-      >
-        <Typography variant="h6" sx={{ p: 2 }}>알림</Typography>
-        <Divider />
-        {notifications.map((noti) => (
-          <Box key={noti.noti_no} sx={{ px: 2, py: 1, bgcolor: noti.is_read === 'N' ? '#f0f0f0' : 'white' }}>
-            <Typography variant="body2">{noti.content}</Typography>
-            <Typography variant="caption" color="textSecondary">{new Date(noti.created_at).toLocaleString()}</Typography>
-          </Box>
-        ))}
-      </Box>
-    </Slide>
+    <div>
+      <Slide direction="right" in={open} mountOnEnter unmountOnExit>
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: sidebarWidth,
+            width: 400,
+            height: '100%',
+            bgcolor: 'white',
+            boxShadow: 4,
+            zIndex: 10,
+            overflowY: 'auto'
+          }}
+        >
+          <Typography variant="h6" sx={{ p: 2, fontWeight: 'bold' }}>알림</Typography>
+          {notifications.length === 0 ? (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '80%',
+                color: '#888',
+                textAlign: 'center',
+                px: 2
+              }}
+            >
+              <Typography variant="body1" sx={{ fontWeight: 500, mb: 2 }}>
+                아직 받은 알림이 없어요
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                누군가가 회원님의 게시글에 좋아요를 누르거나<br />
+                댓글을 달면 여기에 표시돼요.
+              </Typography>
+            </Box>
+          ) : (
+            notifications.map((noti) => (
+              <Box
+              key={noti.noti_no}
+              onClick={async () => {
+                if (!noti.target_post) return;
+
+                try {
+
+                  await fetch('http://localhost:4000/notification/read/' + noti.noti_no, {
+                    method: 'POST'
+                  });
+
+                  setNotifications(prev =>
+                    prev.map(n =>
+                      n.noti_no === noti.noti_no ? { ...n, is_read: 'Y' } : n
+                    )
+                  );
+
+                  const res = await fetch('http://localhost:4000/post/' + noti.target_post);
+                  const data = await res.json();
+
+                  if (data.success) {
+                    setSelectedPost(data.post);
+                    setDialogOpen(true);
+                  }
+                } catch (err) {
+                  console.error("게시글 로딩 실패:", err);
+                }
+              }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                p: 1.5,
+                cursor: 'pointer',
+                '&:hover': { backgroundColor: '#f0f0f0' },
+              }}
+            >
+              <Avatar
+                src={noti.sender_profile || '/assets/profile.jpg'}
+                sx={{ width: 40, height: 40, mr: 2 }}
+              />
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="body2">{noti.content}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {formatDistanceToNow(new Date(noti.created_at), { addSuffix: true, locale: ko })}
+                </Typography>
+              </Box>
+              {noti.thumbnail && noti.thumbnail !== 'null' && (
+                <img
+                  src={'http://localhost:4000' + noti.thumbnail}
+                  alt="썸네일"
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 4,
+                    objectFit: 'cover',
+                    marginLeft: 8
+                  }}
+                />
+              )}
+            </Box>
+            ))
+          )}
+        </Box>
+      </Slide>
+      {selectedPost && (
+        <PostDialog
+          open={dialogOpen}
+          onClose={() => {
+            setDialogOpen(false);
+            setSelectedPost(null); // 다이얼로그 닫힐 때 초기화도 해줘야 함
+          }}
+          post={selectedPost}
+        />
+      )}
+    </div>
+    
   );
 }

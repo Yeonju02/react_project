@@ -80,35 +80,79 @@ function PostDialog({ open, onClose, post }) {
       body: JSON.stringify({ postNo: post.postNo, content: newComment })
     });
     const data = await res.json();
+
     if (data.success) {
+      // ✅ 댓글 등록 후 댓글 목록 새로고침
       const updated = await fetch("http://localhost:4000/comment/" + post.postNo, {
         headers: { authorization: "Bearer " + token }
       }).then(res => res.json());
       setComments(updated.list || []);
       setNewComment('');
+
+      // ✅ 댓글 작성자 ≠ 게시글 작성자 → 알림 전송
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const senderId = payload.userId;
+      const receiverId = post.userId;
+
+      if (senderId !== receiverId) {
+        await fetch('http://localhost:4000/notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            receiver_id: receiverId,
+            sender_id: senderId,
+            type: 'comment',
+            content: `${senderId}님이 회원님의 게시글에 댓글을 남겼습니다.`,
+            target_post: post.postNo
+          })
+        });
+      }
     }
   };
 
   const handleReplySubmit = async (parentId) => {
-    const token = localStorage.getItem('token');
-    const res = await fetch('http://localhost:4000/comment', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        authorization: 'Bearer ' + token
-      },
-      body: JSON.stringify({ postNo: post.postNo, content: replyText, parentId })
-    });
-    const data = await res.json();
-    if (data.success) {
-      const updated = await fetch("http://localhost:4000/comment/" + post.postNo, {
-        headers: { authorization: "Bearer " + token }
-      }).then(res => res.json());
-      setComments(updated.list || []);
-      setReplyText('');
-      setReplyTarget(null);
+  const token = localStorage.getItem('token');
+
+  const res = await fetch('http://localhost:4000/comment', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      authorization: 'Bearer ' + token
+    },
+    body: JSON.stringify({ postNo: post.postNo, content: replyText, parentId })
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    // ✅ 댓글 목록 새로고침
+    const updated = await fetch("http://localhost:4000/comment/" + post.postNo, {
+      headers: { authorization: "Bearer " + token }
+    }).then(res => res.json());
+    setComments(updated.list || []);
+    setReplyText('');
+    setReplyTarget(null);
+
+    // ✅ 대댓글 알림 보내기
+    const senderId = JSON.parse(atob(token.split('.')[1])).userId;
+    const parentComment = comments.find(c => c.comment_no === parentId);
+    const receiverId = parentComment?.user_id;
+
+    if (senderId && receiverId && senderId !== receiverId) {
+      await fetch('http://localhost:4000/notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          receiver_id: receiverId,
+          sender_id: senderId,
+          type: 'reply',
+          content: `${senderId}님이 회원님의 댓글에 답글을 남겼습니다.`,
+          target_post: post.postNo,
+          target_comment: parentId
+        })
+      });
     }
-  };
+  }
+};
 
   const toggleReplies = (commentNo) => {
     setExpandedReplies(prev => ({
@@ -117,7 +161,7 @@ function PostDialog({ open, onClose, post }) {
     }));
   };
 
-  if (!post) return null;
+  if (!post || !post.postNo) return null;
 
   const handleDeleteComment = async () => {
     const token = localStorage.getItem('token');

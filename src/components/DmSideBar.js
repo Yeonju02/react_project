@@ -6,7 +6,7 @@ import { jwtDecode } from 'jwt-decode';
 import NewDmDialog from './NewDmDialog';
 import NoteAltRoundedIcon from '@mui/icons-material/NoteAltRounded';
 
-export default function DmSidebar({ onSelectRoom, reload }) {
+export default function DmSidebar({ onSelectRoom, reload, onReadDm }) {
   const [dmList, setDmList] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
 
@@ -20,7 +20,25 @@ export default function DmSidebar({ onSelectRoom, reload }) {
       .then(data => setDmList(data));
   }, [userId, reload]);
 
-  // ✅ 날짜 포맷 함수
+  const handleReadDm = async (roomNo) => {
+    await fetch('http://localhost:4000/dm/read/' + roomNo + '/' + userId, {
+      method: 'POST',
+    });
+
+    const target = dmList.find(dm => dm.room_no === roomNo);
+    if (target?.unread && onReadDm) {
+      onReadDm(); // ✅ 읽지 않은 방일 경우만 호출
+    }
+
+    setDmList(prev =>
+      prev.map(dm =>
+        dm.room_no === roomNo ? { ...dm, unread: false } : dm
+      )
+    );
+    onSelectRoom(roomNo);
+  };
+
+
   const formatDate = (iso) => {
     if (!iso) return '';
     const date = new Date(iso);
@@ -32,7 +50,6 @@ export default function DmSidebar({ onSelectRoom, reload }) {
     const ampm = hour < 12 ? '오전' : '오후';
     if (hour > 12) hour -= 12;
     if (hour === 0) hour = 12;
-
     return `${year}년 ${month}월 ${day}일 ${ampm} ${hour}시 ${minute}분`;
   };
 
@@ -57,47 +74,67 @@ export default function DmSidebar({ onSelectRoom, reload }) {
         const isMine = dm.last_sender === userId;
         const lastMessageText = (isMine ? '나: ' : '') + dm.last_message;
         const formattedTime = formatDate(dm.last_time);
+        const isUnread = dm.unread;
 
         return (
           <Box key={idx} px={2} py={1} display="flex" alignItems="center"
-            sx={{ cursor: 'pointer', '&:hover': { backgroundColor: '#f5f5f5' } }}
-            onClick={() => onSelectRoom(dm.room_no)}
+            sx={{
+              cursor: 'pointer',
+              '&:hover': { backgroundColor: '#f5f5f5' }
+            }}
+            onClick={() => handleReadDm(dm.room_no, isUnread)}
           >
             <Avatar
               src={dm.profile_img || '/img/default-profile.png'}
               sx={{ width: 44, height: 44, mr: 1 }}
             />
             <Box flex={1} overflow="hidden">
-              {/* 이름 + 시간 한 줄에 */}
               <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Typography
                   variant="subtitle1"
                   fontSize={15}
                   noWrap
-                  sx={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  sx={{
+                    fontWeight: isUnread ? 'bold' : 500,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
                 >
                   {dm.name}
                 </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ flexShrink: 0, whiteSpace: 'nowrap', ml: 1, color : 'blue' }}
-                >
-                  {formattedTime}
-                </Typography>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    {formattedTime}
+                  </Typography>
+                  {isUnread ? (
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        bgcolor: '#0095f6',
+                        borderRadius: '50%'
+                      }}
+                    />
+                  ) : null}
+
+                </Box>
               </Box>
 
-              {/* 메시지 줄이기 */}
               <Typography
                 variant="body2"
-                color="text.secondary"
                 fontSize={13}
+                color="text.secondary"
                 noWrap
                 sx={{
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  maxWidth: '80%'
+                  maxWidth: '80%',
+                  fontWeight: isUnread ? 'bold' : 'normal'
                 }}
               >
                 {lastMessageText}
@@ -107,7 +144,6 @@ export default function DmSidebar({ onSelectRoom, reload }) {
         );
       })}
 
-      {/* 💬 NewDmDialog 연결 */}
       <NewDmDialog
         open={openDialog}
         onClose={() => setOpenDialog(false)}
@@ -119,7 +155,7 @@ export default function DmSidebar({ onSelectRoom, reload }) {
           });
           const data = await res.json();
           setOpenDialog(false);
-          onSelectRoom(data.room_no); 
+          onSelectRoom(data.room_no);
         }}
       />
     </Box>

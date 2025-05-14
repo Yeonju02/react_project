@@ -6,7 +6,7 @@ import { jwtDecode } from 'jwt-decode';
 import NewDmDialog from '../components/NewDmDialog';
 import DmRoom from '../components/DmRoom';
 
-export default function Dm() {
+export default function Dm({setUnreadCount }) {
   const isWide = useMediaQuery('(min-width:1200px)');
   const sidebarWidth = isWide ? 250 : 72;
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -28,7 +28,9 @@ export default function Dm() {
         overflow: 'hidden'
       }}
     >
-      <DmSidebar onSelectRoom={setSelectedRoom} reload={reload} />
+      <DmSidebar onSelectRoom={setSelectedRoom} reload={reload} onReadDm={() => {
+        setUnreadCount(prev => Math.max(prev - 1, 0));
+      }}/>
 
       <Box flex={1} display="flex" alignItems="center" justifyContent="center">
         {typeof selectedRoom === 'number' ? (

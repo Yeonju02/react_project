@@ -1,6 +1,7 @@
 import React from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { Box, CssBaseline } from '@mui/material';
+import { useState } from 'react';
 
 import Login from './pages/Login';
 import Join from './pages/Join';
@@ -17,12 +18,17 @@ import Menu from './components/Menu';
 
 function App() {
   const location = useLocation();
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/join' || location.pathname === '/';
+  const isAuthPage =
+    location.pathname === '/login' ||
+    location.pathname === '/join' ||
+    location.pathname === '/';
+
+  const [unreadCount, setUnreadCount] = useState(0);
 
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      {!isAuthPage && <Menu />}
+      {!isAuthPage && <Menu unreadCount={unreadCount} setUnreadCount={setUnreadCount} />}
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Routes>
           <Route path="/" element={<Login />} />
@@ -34,7 +40,7 @@ function App() {
           <Route path="/post/add" element={<PostAdd />} />
           <Route path="/post/edit/:postNo" element={<PostEdit />} />
           <Route path="/post/:postNo" element={<PostView />} />
-          <Route path="/dm" element={<Dm />} />
+          <Route path="/dm" element={<Dm setUnreadCount={setUnreadCount} />} />
           <Route path="/edit-profile" element={<EditProfile />} />
         </Routes>
       </Box>

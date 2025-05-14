@@ -5,6 +5,8 @@ import {
 } from '@mui/material';
 import { io } from 'socket.io-client';
 import { jwtDecode } from 'jwt-decode';
+import SharedPostCard from './SharedPostCard';
+import PostDialog from './PostDialog';
 
 const socket = io('http://localhost:4000', { autoConnect: false }); // 한 번만 생성
 
@@ -14,7 +16,8 @@ export default function DmRoom({ roomNo, onMessageSend, onDeleteRoom  }) {
   const [otherUser, setOtherUser] = useState(null);
   const [openConfirm, setOpenConfirm] = useState(false);
   const scrollRef = useRef(null);
-  
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedPostNo, setSelectedPostNo] = useState(null);
   const token = localStorage.getItem('token');
   const decodedUserId = token ? jwtDecode(token).userId : '';
 
@@ -98,26 +101,75 @@ export default function DmRoom({ roomNo, onMessageSend, onDeleteRoom  }) {
       <Divider />
 
       {/* 메시지 영역 */}
-      <Box flex={1} px={2} py={1} overflowY="auto" sx={{ minHeight: 0 }}>
-        {messages.map((msg, idx) => (
-          <Box key={idx} textAlign={String(msg.sender_id) === String(decodedUserId)  ? 'right' : 'left'} mb={1}>
-            <Typography
-              sx={{
-                display: 'inline-block',
-                bgcolor: String(msg.sender_id) === String(decodedUserId)  ? '#D0E6FF' : '#eee',
-                px: 2,
-                py: 1,
-                borderRadius: 2,
-                maxWidth: '70%',
-                wordBreak: 'break-word'
-              }}
-            >
-              {msg.content}
-            </Typography>
-          </Box>
-        ))}
+      <Box flex={1} px={2} py={1} sx={{ overflowY: "auto", minHeight: 0 }}>
+        {messages.map((msg, idx) => {
+          const isMine = String(msg.sender_id) === String(decodedUserId);
+
+          const renderMessage = () => {
+            // 공유 메시지일 경우
+            if (msg.content.startsWith('[게시글 공유]')) {
+              const lines = msg.content.split('\n');
+              const userLine = lines.find(line => line.startsWith('@')) || '';
+              const contentLine = lines.find(line => line.startsWith('"'))?.replace(/"/g, '') || '';
+              const imageLine = lines.find(line => line.startsWith('<image:')) || '';
+              const imagePath = imageLine.replace('<image:', '').replace('>', '').trim();
+
+              const postUserId = userLine.replace('@', '').replace('님의 게시글', '').trim();
+
+             return (
+                <Box
+                  sx={{
+                    display: 'inline-block',
+                    bgcolor: isMine ? '#D0E6FF' : '#eee',
+                    px: 1,
+                    py: 1,
+                    borderRadius: 2,
+                    maxWidth: '80%',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => {
+                    const postNoMatch = msg.content.match(/postNo:(\d+)/);
+                    if (postNoMatch) {
+                      const postNo = parseInt(postNoMatch[1], 10);
+                      setSelectedPostNo(postNo);
+                      setDialogOpen(true);
+                    }
+                  }}
+                >
+                  <SharedPostCard postUserId={postUserId} content={contentLine} image={imagePath} />
+                </Box>
+                
+              );
+            }
+
+            // 일반 메시지일 경우
+            return (
+              <Typography
+                sx={{
+                  display: 'inline-block',
+                  bgcolor: isMine ? '#D0E6FF' : '#eee',
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  maxWidth: '70%',
+                  wordBreak: 'break-word',
+                  whiteSpace: 'pre-line'
+                }}
+              >
+                {msg.content}
+              </Typography>
+            );
+          };
+
+          return (
+            <Box key={idx} textAlign={isMine ? 'right' : 'left'} mb={1}>
+              {renderMessage()}
+            </Box>
+          );
+        })}
         <div ref={scrollRef} />
       </Box>
+
       <Divider />
 
       {/* 하단 입력창 */}
@@ -134,6 +186,11 @@ export default function DmRoom({ roomNo, onMessageSend, onDeleteRoom  }) {
         <Button variant="contained" onClick={sendMessage} sx={{ ml: 1, minWidth: 80 }}>전송</Button>
       </Box>
 
+      <PostDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        post={{ postNo: selectedPostNo }}
+      />
       {/* ✅ 삭제 확인 모달 */}
       <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)}>
         <DialogTitle>채팅방을 삭제하시겠습니까?</DialogTitle>
