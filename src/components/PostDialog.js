@@ -3,13 +3,18 @@ import React, { useEffect, useState } from 'react';
 import {
   Dialog, DialogContent, Typography, IconButton, Box, Avatar, TextField, Button, Divider
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import heartEmpty from '../assets/heart-empty.png';
 import heartFilled from '../assets/heart-filled.png';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import ConfirmCmt from './ConfirmCmt';
+import LikeButton from './LikeButton';
+import ShareIcon from '@mui/icons-material/Share';
+import SaveButton from './SaveButton';
+import { formatDistanceToNow } from 'date-fns';
+import ko from 'date-fns/locale/ko';
+import { useNavigate } from 'react-router-dom'; 
 
 function PostDialog({ open, onClose, post }) {
   const [comments, setComments] = useState([]);
@@ -22,6 +27,20 @@ function PostDialog({ open, onClose, post }) {
   const [selectedCommentNo, setSelectedCommentNo] = useState(null);
   const [deleteMode, setDeleteMode] = useState('delete');
   const [currentUserId, setCurrentUserId] = useState('');
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionResults, setMentionResults] = useState([]);
+  const [mentionedUsers, setMentionedUsers] = useState([]);
+  const [showMentions, setShowMentions] = useState(false);
+  const [replyMentionQuery, setReplyMentionQuery] = useState('');
+  const [replyMentionResults, setReplyMentionResults] = useState([]);
+  const [replyMentionedUsers, setReplyMentionedUsers] = useState([]);
+  const [showReplyMentions, setShowReplyMentions] = useState(false);
+  const navigate = useNavigate();
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [optionOpen, setOptionOpen] = useState(false);
+
+  const lightPurple = '#9b59b6'; // 연보라색
+  const darkPurple = '#8e44ad';  // hover 등 진한 보라
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -71,29 +90,54 @@ function PostDialog({ open, onClose, post }) {
 
   const handleAddComment = async () => {
     const token = localStorage.getItem('token');
-    const res = await fetch('http://localhost:4000/comment', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        authorization: "Bearer " + token
-      },
-      body: JSON.stringify({ postNo: post.postNo, content: newComment })
-    });
-    const data = await res.json();
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const senderId = payload.userId;
 
-    if (data.success) {
-      // ✅ 댓글 등록 후 댓글 목록 새로고침
+    try {
+      // 1. 댓글 등록
+      const res = await fetch('http://localhost:4000/comment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          authorization: "Bearer " + token
+        },
+        body: JSON.stringify({ postNo: post.postNo, content: newComment })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert('댓글 등록 실패');
+        return;
+      }
+
+      const commentNo = data.commentNo;
+
+      // 2. 멘션 API 호출
+      if (mentionedUsers.length > 0 && commentNo) {
+        await fetch('http://localhost:4000/comment/mentions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            authorization: "Bearer " + token
+          },
+          body: JSON.stringify({
+            commentNo,
+            postNo: post.postNo,
+            mentionerId: senderId,
+            mentionedUserIds: mentionedUsers
+          })
+        });
+      }
+
+      // 3. 게시글 댓글 새로고침
       const updated = await fetch("http://localhost:4000/comment/" + post.postNo, {
         headers: { authorization: "Bearer " + token }
       }).then(res => res.json());
       setComments(updated.list || []);
-      setNewComment('');
 
-      // ✅ 댓글 작성자 ≠ 게시글 작성자 → 알림 전송
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const senderId = payload.userId;
+      // 4. 댓글 알림 (작성자 ≠ 게시글 주인일 때만)
       const receiverId = post.userId;
-
       if (senderId !== receiverId) {
         await fetch('http://localhost:4000/notification', {
           method: 'POST',
@@ -107,6 +151,16 @@ function PostDialog({ open, onClose, post }) {
           })
         });
       }
+
+      // 5. 입력 초기화
+      setNewComment('');
+      setMentionedUsers([]);
+      setShowMentions(false);
+      setMentionResults([]);
+
+    } catch (err) {
+      console.error('댓글 등록 중 오류:', err);
+      alert('댓글 등록 실패');
     }
   };
 
@@ -180,17 +234,96 @@ function PostDialog({ open, onClose, post }) {
     setDeleteModalOpen(false);
   };
 
+  const handleCommentInputChange = (e) => {
+    const value = e.target.value;
+    setNewComment(value);
+
+    const match = value.match(/@([a-zA-Z0-9_]+)$/);
+    if (match) {
+      setMentionQuery(match[1]);
+      setShowMentions(true);
+
+      fetch(`http://localhost:4000/search/users?q=${match[1]}`)
+        .then(res => res.json())
+        .then(data => setMentionResults(data.list || []));
+    } else {
+      setShowMentions(false);
+      setMentionResults([]);
+    }
+  };
+
+  const handleMentionSelect = (user) => {
+    const newText = newComment.replace(/@([a-zA-Z0-9_]+)$/, `@${user.user_id} `);
+    setNewComment(newText);
+    setMentionedUsers(prev => [...new Set([...prev, user.user_id])]);
+    setShowMentions(false);
+    setMentionResults([]);
+  };
+
+  const handleReplyInputChange = (e) => {
+    const value = e.target.value;
+    setReplyText(value);
+
+    const match = value.match(/@([a-zA-Z0-9_]+)$/);
+    if (match) {
+      setReplyMentionQuery(match[1]);
+      setShowReplyMentions(true);
+
+      fetch(`http://localhost:4000/search/users?q=${match[1]}`)
+        .then(res => res.json())
+        .then(data => setReplyMentionResults(data.list || []));
+    } else {
+      setShowReplyMentions(false);
+      setReplyMentionResults([]);
+    }
+  };
+
+  const handleReplyMentionSelect = (user) => {
+    const newText = replyText.replace(/@([a-zA-Z0-9_]+)$/, `@${user.user_id} `);
+    setReplyText(newText);
+    setReplyMentionedUsers(prev => [...new Set([...prev, user.user_id])]);
+    setShowReplyMentions(false);
+  };
+
+  const highlightMentionsAndTags = (text) => {
+    const parts = text.split(/([@#][a-zA-Z0-9가-힣_]+)/g); // @, # 키워드 감지
+    return parts.map((part, idx) =>
+      part.startsWith('@') || part.startsWith('#') ? (
+        <span key={idx} style={{ color: 'purple', fontWeight: 500 }}>{part}</span>
+      ) : (
+        <span key={idx}>{part}</span>
+      )
+    );
+  };
+  const toggleFollow = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      await fetch('http://localhost:4000/follow', {
+        method: isFollowing ? 'DELETE' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ targetUserId: post.userId })
+      });
+      setIsFollowing(prev => !prev);
+    } catch (err) {
+      console.error('팔로우 토글 실패:', err);
+    }
+  };
+
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogContent sx={{ display: 'flex', p: 0, height: 600, overflow: 'hidden' }}>
         {/* 왼쪽: 이미지 영역 */}
-        <Box sx={{ width: '50%', position: 'relative', bgcolor: '#000' }}>
+        <Box sx={{ width: '50%', position: 'relative', bgcolor: '#ccc', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           {post.images?.length > 0 ? (
             <>
               <img
                 src={"http://localhost:4000" + post.images[currentIndex]}
                 alt="게시글"
-                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
               {post.images.length > 1 && (
                 <>
@@ -218,7 +351,7 @@ function PostDialog({ open, onClose, post }) {
               </Box>
             </>
           ) : (
-            <Typography sx={{ color: '#fff', m: 'auto' }}>이미지 없음</Typography>
+            <Typography sx={{ color: '#fff', fontSize: 16 }}>이미지 없음</Typography>
           )}
         </Box>
 
@@ -228,16 +361,37 @@ function PostDialog({ open, onClose, post }) {
           <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar src="/assets/profile.jpg" sx={{ mr: 1 }} />
-              <Typography variant="subtitle2">{post.userId}</Typography>
+              <Typography
+                variant="subtitle2"
+                sx={{ cursor: 'pointer', fontWeight: 600 }}
+                onClick={() => navigate(`/user/${post.userId}`)}
+              >
+                {post.userId}
+              </Typography>
+              {currentUserId !== post.userId && (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    ml: 1,
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    color: isFollowing ? 'gray' : 'purple',
+                    '&:hover': { color: '#6a1b9a' }
+                  }}
+                  onClick={toggleFollow}
+                >
+                  {isFollowing ? '팔로잉' : '팔로우'}
+                </Typography>
+              )}
             </Box>
-            <IconButton onClick={onClose}><CloseIcon /></IconButton>
+            <IconButton onClick={() => setOptionOpen(true)}><MoreHorizIcon  /></IconButton>
           </Box>
 
           <Divider />
 
           {/* 본문 및 댓글 영역 */}
           <Box sx={{ p: 2, flex: 1, overflowY: 'auto' }}>
-            <Typography variant="body2" sx={{ whiteSpace: 'pre-line', mb: 2 }}>{post.content}</Typography>
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-line', mb: 2 }}>{highlightMentionsAndTags(post.content)}</Typography>
 
             {comments.map((cmt) => (
               <Box key={cmt.comment_no} sx={{ mb: 2 }}>
@@ -248,44 +402,90 @@ function PostDialog({ open, onClose, post }) {
                   <Box sx={{ display: 'flex', flex: 1 }}>
                     <Avatar src="/assets/profile.jpg" sx={{ mr: 2, mt: 1 }} />
                     <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2"><b>{cmt.user_id}</b> {cmt.content}</Typography>
+                      <Typography variant="body2"><b>{cmt.user_id}</b> {highlightMentionsAndTags(cmt.content)}</Typography>
                       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 0.5 }}>
-                        <Typography variant="caption">{cmt.createdAt}</Typography>
+                        <Typography variant="caption" color="gray">
+                          {formatDistanceToNow(new Date(cmt.createdAt), { addSuffix: true, locale: ko })}
+                        </Typography>
                         <Typography variant="caption">좋아요 {cmt.likeCount || 0}개</Typography>
-                        <Button size="small" onClick={() => setReplyTarget(cmt.comment_no)} sx={{ p: 0, minWidth: 0 }}>
+                        <Button
+                          size="small"
+                          onClick={() => {
+                            if (replyTarget === cmt.comment_no) {
+                              // 이미 열려 있으면 닫기
+                              setReplyTarget(null);
+                              setReplyText('');
+                              setReplyMentionedUsers([]);
+                            } else {
+                              // 새로 열기
+                              setReplyTarget(cmt.comment_no);
+                              setReplyText(`@${cmt.user_id} `);
+                              setReplyMentionedUsers(prev => [...new Set([...prev, cmt.user_id])]);
+                            }
+                          }}
+                          sx={{ p: 0, minWidth: 0 }}
+                        >
                           <Typography variant="caption">답글 달기</Typography>
                         </Button>
                       </Box>
 
                       {replyTarget === cmt.comment_no && (
-                        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                        <Box sx={{ display: 'flex', gap: 1, mt: 1, position: 'relative' }}>
                           <TextField
                             value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
+                            onChange={handleReplyInputChange}
                             fullWidth size="small"
                             placeholder="답글 입력..."
                           />
                           <Button variant="contained" onClick={() => handleReplySubmit(cmt.comment_no)}>등록</Button>
+
+                          {showReplyMentions && replyMentionResults.length > 0 && (
+                            <Box sx={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              bgcolor: '#fff',
+                              border: '1px solid #ccc',
+                              borderRadius: 1,
+                              mt: 0.5,
+                              zIndex: 10,
+                              width: '100%'
+                            }}>
+                              {replyMentionResults.map((user, idx) => (
+                                <Box
+                                  key={idx}
+                                  sx={{ p: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#eee' } }}
+                                  onClick={() => handleReplyMentionSelect(user)}
+                                >
+                                  <Typography><b>{user.name}</b> @{user.user_id}</Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
                         </Box>
                       )}
 
-                      <Button size="small" onClick={() => toggleReplies(cmt.comment_no)} sx={{ mt: 1, p: 0, minWidth: 0 }}>
-                        <Typography variant="caption" color="gray">
-                          {expandedReplies[cmt.comment_no] ? '답글 숨기기' : `답글 보기(${cmt.children?.length || 0}개)`}
-                        </Typography>
-                      </Button>
+                      {(cmt.children?.length || 0) > 0 && (
+                        <Button size="small" onClick={() => toggleReplies(cmt.comment_no)} sx={{ mt: 1, p: 0, minWidth: 0 }}>
+                          <Typography variant="caption" color="gray">
+                            {expandedReplies[cmt.comment_no] ? '답글 숨기기' : `답글 보기(${cmt.children.length}개)`}
+                          </Typography>
+                        </Button>
+                      )}
                     </Box>
                   </Box>
 
                   {/* 댓글 옵션, 좋아요 */}
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 0.5 }}>
                     <img
-                        src={cmt.likedByMe ? heartFilled : heartEmpty}
-                        alt="like"
-                        style={{ width: 16, height: 16, cursor: 'pointer', marginTop: 4 }}
-                        onClick={() => handleCommentLikeToggle(cmt.comment_no)}
-                      />
-                    {cmt.user_id === currentUserId ? (
+                      src={cmt.likedByMe ? heartFilled : heartEmpty}
+                      alt="like"
+                      style={{ width: 16, height: 16, cursor: 'pointer', marginTop: 4 }}
+                      onClick={() => handleCommentLikeToggle(cmt.comment_no)}
+                    />
+
+                    {/* ✅ 내 댓글일 때만 옵션 아이콘 보여주기 */}
+                    {cmt.user_id === currentUserId && (
                       <IconButton
                         onClick={() => {
                           setSelectedCommentNo(cmt.comment_no);
@@ -295,33 +495,87 @@ function PostDialog({ open, onClose, post }) {
                       >
                         <MoreHorizIcon />
                       </IconButton>
-                    ) : (
-                      <IconButton
-                        onClick={() => {
-                          setSelectedCommentNo(cmt.comment_no);
-                          setDeleteMode('report');
-                          setDeleteModalOpen(true);
-                        }}
-                      >
-                        <MoreHorizIcon />
-                      </IconButton>
                     )}
-
                   </Box>
                 </Box>
 
                 {/* 대댓글 출력 */}
                 {expandedReplies[cmt.comment_no] && cmt.children?.map((reply) => (
-                  <Box key={reply.comment_no} sx={{ display: 'flex', gap: 1, mt: 1, ml: 5 }}>
-                    <Avatar src="/assets/profile.jpg" sx={{ width: 26, height: 26 }} />
+                 <Box key={reply.comment_no} sx={{ display: 'flex', gap: 1, mt: 1, ml: 5, justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex' }}>
+                    <Avatar src="/assets/profile.jpg" sx={{ width: 26, height: 26, mr: 1 }} />
                     <Box>
-                      <Typography variant="body2"><b>{reply.user_id}</b> {reply.content}</Typography>
+                      <Typography variant="body2"><b>{reply.user_id}</b> {highlightMentionsAndTags(reply.content)}</Typography>
                       <Typography variant="caption">{reply.createdAt}</Typography>
                     </Box>
                   </Box>
+
+                  {/* 좋아요 & 옵션 메뉴 */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <img
+                      src={reply.likedByMe ? heartFilled : heartEmpty}
+                      alt="like"
+                      style={{ width: 16, height: 16, cursor: 'pointer', marginTop: 4 }}
+                      onClick={() => handleCommentLikeToggle(reply.comment_no)}
+                    />
+                    <IconButton
+                      onClick={() => {
+                        setSelectedCommentNo(reply.comment_no);
+                        setDeleteMode(reply.user_id === currentUserId ? 'delete' : 'report');
+                        setDeleteModalOpen(true);
+                      }}
+                    >
+                      <MoreHorizIcon />
+                    </IconButton>
+                  </Box>
+                </Box>
                 ))}
               </Box>
             ))}
+          </Box>
+          <Divider />
+
+          {/* 하단 아이콘 + 좋아요 수 영역 */}
+          <Box sx={{ px: 2, pt: 1, mb: 2 }}>
+            {/* 아이콘 줄 */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {/* 왼쪽: 좋아요 + 공유 */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <LikeButton
+                  postNo={post.postNo}
+                  initialLiked={post.likedByMe}
+                  initialCount={post.likeCount}
+                  onLike={() => {}}
+                  onLikeToggle={(newCount) => {
+                    // 필요 시 PostDialog 상태에 반영 가능
+                  }}
+                />
+                <IconButton sx={{ mb: 0.3 }} size="small" onClick={() => {
+                  // 공유 다이얼로그 열기
+                  alert("공유 기능은 추후 연결해주세요.");
+                }}>
+                  <ShareIcon />
+                </IconButton>
+              </Box>
+
+              {/* 오른쪽: 저장 */}
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <IconButton size="small">
+                  <SaveButton
+                    postNo={post.postNo}
+                    initialSaved={post.savedByMe}
+                  />
+                </IconButton>
+              </Box>
+            </Box>
+
+            {/* 좋아요 수 */}
+            <Typography variant="body2" fontWeight="bold" sx={{ mt: 1 }}>
+              좋아요 {post.likeCount || 0}개
+            </Typography>
+            <Typography variant="caption" color="gray">
+              {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: ko })}
+            </Typography>
           </Box>
 
           {/* 구분선 */}
@@ -331,13 +585,36 @@ function PostDialog({ open, onClose, post }) {
           <Box sx={{ display: 'flex', p: 1, alignItems: 'center' }}>
             <TextField
               value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
+              onChange={handleCommentInputChange}
               placeholder="댓글 달기..."
               variant="outlined"
               fullWidth
               size="small"
             />
             <Button onClick={handleAddComment} variant="text" disabled={!newComment.trim()}>게시</Button>
+            {showMentions && mentionResults.length > 0 && (
+              <Box sx={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                bgcolor: '#fff',
+                border: '1px solid #ccc',
+                borderRadius: 1,
+                mt: 0.5,
+                zIndex: 10,
+                width: '100%'
+              }}>
+                {mentionResults.map((user, idx) => (
+                  <Box
+                    key={idx}
+                    sx={{ p: 1, cursor: 'pointer', '&:hover': { backgroundColor: '#eee' } }}
+                    onClick={() => handleMentionSelect(user)}
+                  >
+                    <Typography><b>{user.name}</b> @{user.user_id}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
           </Box>
         </Box>
         <ConfirmCmt
@@ -346,7 +623,84 @@ function PostDialog({ open, onClose, post }) {
           onConfirm={handleDeleteComment}
         />
       </DialogContent>
+      <Dialog
+        open={optionOpen}
+        onClose={() => setOptionOpen(false)}
+        PaperProps={{
+          sx: {
+            width: 360,
+            borderRadius: 3,
+            overflow: 'hidden',
+          }
+        }}
+      >
+        <Box>
+          {post.userId === currentUserId ? (
+            <>
+              <Button
+                fullWidth
+                onClick={() => {
+                  alert("삭제 기능 연결 예정");
+                  setOptionOpen(false);
+                }}
+                sx={{
+                  color: 'red',
+                  fontSize: 16,
+                  py: 2,
+                  borderBottom: '1px solid #ddd'
+                }}
+              >
+                게시글 삭제
+              </Button>
+              <Button
+                fullWidth
+                onClick={() => {
+                  alert("수정 기능 연결 예정");
+                  setOptionOpen(false);
+                }}
+                sx={{
+                  fontWeight: 'bold',
+                  fontSize: 16,
+                  borderBottom: '1px solid #ddd',
+                  py: 2
+                }}
+              >
+                게시글 수정
+              </Button>
+            </>
+          ) : (
+            <Button
+              fullWidth
+              onClick={() => {
+                alert("신고 완료!");
+                setOptionOpen(false);
+              }}
+              sx={{
+                color: 'red',
+                fontWeight: 'bold',
+                fontSize: 16,
+                borderBottom: '1px solid #ddd',
+                py: 2
+              }}
+            >
+              신고
+            </Button>
+          )}
+          <Button
+            fullWidth
+            onClick={() => setOptionOpen(false)}
+            sx={{
+              fontSize: 16,
+              py: 2
+            }}
+          >
+            취소
+          </Button>
+        </Box>
+      </Dialog>
+
     </Dialog>
+  
     
   );
 }

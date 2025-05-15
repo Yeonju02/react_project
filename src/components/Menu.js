@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Avatar, Typography, useMediaQuery } from '@mui/material';
+import { Box, Avatar, Typography, useMediaQuery, Menu as MuiMenu, MenuItem } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 import HomeIcon from '@mui/icons-material/Home';
@@ -21,6 +21,49 @@ export default function Menu({ unreadCount, setUnreadCount }) {
   const [showSearch, setShowSearch] = useState(false);
   const [showNoti, setShowNoti] = useState(false);
   const [unreadNotiCount, setUnreadNotiCount] = useState(0);
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null); // ✅ 드롭다운 anchor 상태
+  const isMenuOpen = Boolean(menuAnchorEl);
+
+  const [profileImg, setProfileImg] = useState('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userId = token ? JSON.parse(atob(token.split('.')[1])).userId : '';
+    if (!userId) return;
+
+    fetch('http://localhost:4000/user/info/' + userId)
+      .then(res => res.json())
+      .then((data) => {
+        console.log(data.profile_img)
+        setProfileImg(data.profile_img)
+      }); // ← 서버에서 URL 받아와 저장
+  }, []);
+
+
+  // 더보기 클릭 시
+  const handleMoreClick = (event) => {
+    setMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+  };
+
+  // 로그아웃
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
+  // 문제 신고 페이지 이동
+  const handleReport = () => {
+    navigate('/report');
+  };
+
+  // 회원 탈퇴 페이지 이동
+  const handleWithdraw = () => {
+    navigate('/withdraw');
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -69,9 +112,9 @@ export default function Menu({ unreadCount, setUnreadCount }) {
   const renderItem = (menu, label, icon, path, badgeCount = 0, badgeVisible = true) => (
     <Box
       key={menu}
-      onClick={() => {
+      onClick={(e) => {
         if (typeof path === 'function') {
-          path(); // 함수일 경우 직접 실행
+          path(e); // 함수일 경우 직접 실행
         } else {
           handleMenuClick(menu, path);
         }
@@ -162,11 +205,24 @@ export default function Menu({ unreadCount, setUnreadCount }) {
         {renderItem('like', '알림', <FavoriteIcon sx={{ color: iconColor('like'), fontSize: 30, ml: 0.5 }} />, null, unreadNotiCount, !showNoti)}
         {renderItem('add', '만들기', <AddBoxIcon sx={{ color: iconColor('add'), fontSize: 30, ml: 0.5 }} />, '/post/add')}
         {renderItem('mypage', '프로필',
-          <Avatar src="/assets/profile.jpg" sx={{ width: 30, height: 30, ml: 0.7, border: selected === 'mypage' ? '2px solid black' : 'none' }} />,
+          <Avatar
+            src={profileImg ? 'http://localhost:4000/' + profileImg : process.env.PUBLIC_URL + '/assets/default.jpg'}
+            sx={{
+              width: 30,
+              height: 30,
+              ml: 0.7,
+              border: selected === 'mypage' ? '2px solid #CBA3E3' : 'none' // ✅ 보라 테두리 조건
+            }}
+          />,
           '/mypage'
         )}
+
         <Box sx={{ flexGrow: 1 }} />
-        {renderItem('more', '더 보기', <MenuIcon sx={{ fontSize: 30, color: '#8e8e8e' }} />)}
+        {renderItem('more', '더 보기',
+          <MenuIcon sx={{ fontSize: 30, color: '#8e8e8e', '&hover': 'pointer' }} />,
+          (e) => handleMoreClick(e)
+        )}
+
       </Box>
 
       {/* 검색 슬라이드 */}
@@ -192,6 +248,48 @@ export default function Menu({ unreadCount, setUnreadCount }) {
           sidebarWidth={isWide ? 250 : 72}
         />
       )}
+      <MuiMenu
+        anchorEl={menuAnchorEl}
+        open={isMenuOpen}
+        onClose={handleMenuClose}
+        disableAutoFocusItem
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            ml: 4,
+            mt: -6,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            width: 220,
+          }
+        }}
+      >
+        {/* 상단 메뉴 */}
+        <MenuItem
+          onClick={handleMenuClose}
+          sx={{
+            backgroundColor: 'transparent'
+          }}
+        >
+          <Typography fontSize={14}>모드 전환</Typography>
+        </MenuItem>
+
+        <MenuItem onClick={() => { handleMenuClose(); handleReport(); }}>
+          <Typography fontSize={14}>문제 신고</Typography>
+        </MenuItem>
+
+        {/* 구분선 */}
+        <Box sx={{ my: 0.5, borderTop: '1px solid #eee' }} />
+
+        {/* 하단 메뉴 */}
+        <MenuItem onClick={handleMenuClose}>
+          <Typography fontSize={14} sx={{ color: 'red' }}>회원 탈퇴</Typography>
+        </MenuItem>
+        <MenuItem onClick={() => { handleMenuClose(); handleLogout(); }}>
+          <Typography fontSize={14}>로그아웃</Typography>
+        </MenuItem>
+      </MuiMenu>
     </>
   );
 }

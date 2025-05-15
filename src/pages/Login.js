@@ -63,7 +63,7 @@ function Login() {
         <img
           src={loginSlide} 
           alt="Instagram Side Png"
-          style={{ height: 500 }}
+          style={{ height: 500, borderRadius: 3 }}
         />
       </Box>
 
@@ -73,11 +73,8 @@ function Login() {
             <img
                 src={logo}
                 alt="Instagram"
-                style={{ height: 100 }}
+                style={{ height: 150 }}
             />
-          <Typography variant="h3" fontFamily="'Grand Hotel', cursive" mb={3}>
-            Instagram
-          </Typography>
 
           <TextField
             fullWidth
@@ -85,7 +82,22 @@ function Login() {
             margin="normal"
             label="아이디"
             value={userId}
+            onKeyUp={(e) => {
+              if(e.key == 'Enter') {
+                handleLogin();
+              }
+            }}
             onChange={(e) => setUserId(e.target.value)}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '&.Mui-focused fieldset': {
+                  borderColor: '#b39ddb', // 포커스 시 테두리색
+                }
+              },
+              '& label.Mui-focused': {
+                color: '#b39ddb', // 포커스 시 라벨 색
+              }
+            }}
           />
 
           <TextField
@@ -94,14 +106,29 @@ function Login() {
             margin="normal"
             label="비밀번호"
             type="password"
+            onKeyUp={(e) => {
+              if(e.key == 'Enter') {
+                handleLogin();
+              }
+            }}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '&.Mui-focused fieldset': {
+                  borderColor: '#b39ddb',
+                }
+              },
+              '& label.Mui-focused': {
+                color: '#b39ddb',
+              }
+            }}
           />
 
           <Button
             fullWidth
             variant="contained"
-            sx={{ mt: 2, mb: 2, bgcolor: '#0095f6', textTransform: 'none' }}
+            sx={{ mt: 2, mb: 2, bgcolor: '#9575cd', textTransform: 'none' }}
             onClick={handleLogin}
           >
             로그인
@@ -112,14 +139,32 @@ function Login() {
           </Typography>
 
           <Typography variant="body2" mb={2}>
-            <Link href="#" underline="hover">
+            <Link
+              href="#"
+              underline="hover"
+              sx={{
+                color: '#b39ddb',
+                '&:hover': {
+                  color: '#9575cd',
+                }
+              }}
+            >
               비밀번호를 잊으셨나요?
             </Link>
           </Typography>
 
           <Typography variant="body2">
             계정이 없으신가요?{' '}
-            <Link href="/join" underline="hover" color="#0095f6">
+            <Link
+              href="/join"
+              underline="hover"
+              sx={{
+                color: '#b39ddb',
+                '&:hover': {
+                  color: '#9575cd',
+                }
+              }}
+            >
               가입하기
             </Link>
           </Typography>

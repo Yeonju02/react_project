@@ -46,7 +46,7 @@ function SearchSlide({ open, onClose, sidebarWidth = 72 }) {
         sx={{
           position: 'fixed',
           top: 0,
-          left: sidebarWidth || 72, 
+          left: sidebarWidth || 72,
           bottom: 0,
           width: 400,
           zIndex: 10,
@@ -67,9 +67,35 @@ function SearchSlide({ open, onClose, sidebarWidth = 72 }) {
             onChange={(e) => setKeyword(e.target.value)}
             variant="outlined"
             size="small"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: '#ce93d8', // 기본 테두리
+                },
+                '&:hover fieldset': {
+                  borderColor: '#ba68c8', // hover 시 테두리
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#ab47bc', // 포커스 시 테두리
+                },
+              }
+            }}
           />
 
-          <Tabs value={tab} onChange={(_, newVal) => setTab(newVal)} centered sx={{ mt: 2 }}>
+          <Tabs value={tab} onChange={(_, newVal) => setTab(newVal)} centered
+            TabIndicatorProps={{
+              style: { backgroundColor: '#ba68c8' } // 밑줄 색상
+            }}
+            textColor="secondary"
+            sx={{
+              mt: 2,
+              '& .MuiTab-root': {
+                color: '#9e9e9e', // 기본 글자색
+              },
+              '& .Mui-selected': {
+                color: '#8e24aa', // 선택된 탭 글자색
+              }
+            }}>
             <Tab label="게시글" />
             <Tab label="사용자" />
           </Tabs>
@@ -86,9 +112,9 @@ function SearchSlide({ open, onClose, sidebarWidth = 72 }) {
                 key={idx}
                 onClick={() => {
                   if (tab === 0) {
-                    handleCardClick(item); 
+                    handleCardClick(item);
                   } else {
-                    navigate('/user/' + item.user_id); 
+                    navigate('/user/' + item.user_id);
                     onClose();
                   }
                 }}
@@ -100,10 +126,10 @@ function SearchSlide({ open, onClose, sidebarWidth = 72 }) {
                   border: '1px solid #eee',
                   p: 1,
                   borderRadius: 1,
-                  cursor: 'pointer', 
+                  cursor: 'pointer',
                   transition: 'background-color 0.2s ease',
                   '&:hover': {
-                    backgroundColor: '#f5f5f5'
+                    backgroundColor: '#f3e5f5'
                   }
                 }}
               >

@@ -1,15 +1,15 @@
-// PostAdd.js (slide dot indicator version)
 import React, { useState, useCallback } from 'react';
 import {
-  Box, Typography, Button, TextField, IconButton, Modal, Slider
+  Box, Typography, Button, TextField, IconButton, Modal, Slider, Avatar
 } from '@mui/material';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import {jwtDecode} from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../utils/cropImage';
 import { useNavigate } from 'react-router-dom';
+import TagUserDialog from '../components/TagUserDialog';
 
 function PostAdd() {
   const navigate = useNavigate();
@@ -21,6 +21,10 @@ function PostAdd() {
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState('');
   const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [tagNames, setTagNames] = useState([]);
+  const [userTags, setUserTags] = useState([]);
+  const [tagPos, setTagPos] = useState(null);
+  const [openTagDialog, setOpenTagDialog] = useState(false);
 
   const token = localStorage.getItem('token');
   const userId = token ? jwtDecode(token).userId : '';
@@ -42,7 +46,6 @@ function PostAdd() {
   const handleCropDone = async () => {
     const croppedBlob = await getCroppedImg(images[currentIndex], croppedAreaPixels);
     const croppedUrl = URL.createObjectURL(croppedBlob);
-
     const updated = [...croppedImages];
     updated[currentIndex] = { blob: croppedBlob, url: croppedUrl };
     setCroppedImages(updated);
@@ -56,9 +59,14 @@ function PostAdd() {
   };
 
   const handleUpload = async () => {
+    if (!content.trim()) {
+      alert('내용을 입력해주세요.');
+      return;
+    }
+
     const formData = new FormData();
     croppedImages.forEach((img, idx) => {
-        formData.append('files', img.blob, "image" + idx + ".png")
+      formData.append('files', img.blob, "image" + idx + ".png");
     });
     formData.append('userId', userId);
     formData.append('content', content);
@@ -68,10 +76,31 @@ function PostAdd() {
         method: 'POST',
         body: formData
       });
-
       const data = await res.json();
+
       if (data.success) {
-        alert(data.message);
+        const postNo = data.postNo;
+
+        const tags = extractHashtags(content);
+        setTagNames(tags);
+
+        if (tags.length > 0) {
+          await fetch('http://localhost:4000/post/hashtags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postNo, tagNames: tags })
+          });
+        }
+
+        if (userTags.length > 0) {
+          await fetch('http://localhost:4000/post/user-tags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postNo, userTags })
+          });
+        }
+
+        alert('게시글이 등록되었습니다.');
         setImages([]);
         setCroppedImages([]);
         setContent('');
@@ -86,6 +115,12 @@ function PostAdd() {
     }
   };
 
+  const extractHashtags = (text) => {
+    const tags = text.match(/#[^\s#]+/g);
+    if (!tags) return [];
+    return [...new Set(tags.map(tag => tag.replace('#', '')))];
+  };
+
   const showPrev = () => {
     setCurrentIndex(prev => (prev === 0 ? croppedImages.length - 1 : prev - 1));
   };
@@ -94,37 +129,75 @@ function PostAdd() {
     setCurrentIndex(prev => (prev === croppedImages.length - 1 ? 0 : prev + 1));
   };
 
+  const handleImageClick = (e) => {
+    const rect = e.target.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    setTagPos({ x, y, imageIndex: currentIndex });
+    setOpenTagDialog(true);
+  };
+
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
+      {/* 프로필 영역 */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Avatar src={`http://localhost:4000/profile/${userId}.jpg`} sx={{ mr: 1 }} />
+        <Typography variant="subtitle1">@{userId}</Typography>
+      </Box>
+
       <Typography variant="h5" mb={2}>게시글 작성</Typography>
 
+      {/* 파일 업로드 */}
       <Button
         variant="outlined"
         component="label"
         startIcon={<PhotoCamera />}
-        sx={{ mb: 2 }}
+        sx={{
+          mb: 2,
+          color: '#7e6ae8',
+          borderColor: '#c7b8f5',
+          '&:hover': {
+            borderColor: '#a18df2',
+            backgroundColor: '#f3efff'
+          }
+        }}
       >
         사진 선택
-        <input
-          type="file"
-          hidden
-          multiple
-          accept="image/*"
-          onChange={handleFileChange}
-        />
+        <input type="file" hidden multiple accept="image/*" onChange={handleFileChange} />
       </Button>
 
+      {/* 이미지 미리보기 */}
       {croppedImages.length > 0 && (
-        <Box sx={{ position: 'relative', mb: 2 }}>
+        <Box sx={{ position: 'relative', mb: 2 }} onClick={handleImageClick}>
           <img
             src={croppedImages[currentIndex]?.url}
             alt={`preview-${currentIndex}`}
             style={{ width: '100%', height: 400, objectFit: 'cover' }}
           />
-          <IconButton onClick={showPrev} sx={{ position: 'absolute', top: '50%', left: 0, transform: 'translateY(-50%)' }}>
+          {userTags
+            .filter(tag => tag.imageIndex === currentIndex)
+            .map((tag, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  position: 'absolute',
+                  top: `${tag.y * 100}%`,
+                  left: `${tag.x * 100}%`,
+                  transform: 'translate(-50%, -50%)',
+                  bgcolor: 'rgba(0,0,0,0.6)',
+                  color: '#fff',
+                  px: 1,
+                  borderRadius: 1,
+                  fontSize: 12
+                }}
+              >
+                @{tag.nickname}
+              </Box>
+            ))}
+          <IconButton onClick={showPrev} sx={{ position: 'absolute', top: '50%', left: 0, transform: 'translateY(-50%)', color: '#7e6ae8' }}>
             <ArrowBackIosNewIcon />
           </IconButton>
-          <IconButton onClick={showNext} sx={{ position: 'absolute', top: '50%', right: 0, transform: 'translateY(-50%)' }}>
+          <IconButton onClick={showNext} sx={{ position: 'absolute', top: '50%', right: 0, transform: 'translateY(-50%)', color: '#7e6ae8' }}>
             <ArrowForwardIosIcon />
           </IconButton>
           <Box sx={{ position: 'absolute', bottom: 8, width: '100%', display: 'flex', justifyContent: 'center', gap: 1 }}>
@@ -135,7 +208,7 @@ function PostAdd() {
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  backgroundColor: idx === currentIndex ? '#000' : '#ccc'
+                  backgroundColor: idx === currentIndex ? '#7e6ae8' : '#e0d8f9'
                 }}
               />
             ))}
@@ -143,25 +216,77 @@ function PostAdd() {
         </Box>
       )}
 
+      {/* 내용 입력 */}
       <TextField
         fullWidth
         multiline
         rows={4}
-        label="내용을 입력하세요"
+        placeholder="오늘 어떤 일이 있었나요?"
         value={content}
         onChange={(e) => setContent(e.target.value)}
+        sx={{
+          border: '1px solid #c7b8f5',
+          borderRadius: 2,
+          p: 1,
+          bgcolor: '#faf8ff',
+          mb: 1,
+          '& .MuiOutlinedInput-root': {
+            '& fieldset': { border: 'none' },
+          }
+        }}
       />
 
+      {/* 해시태그 추천 */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        {['#맛집', '#하루기록', '#OOTD'].map(tag => (
+          <Button
+            key={tag}
+            size="small"
+            sx={{
+              backgroundColor: '#f0eaff',
+              color: '#7e6ae8',
+              fontSize: 12,
+              borderRadius: 2,
+              textTransform: 'none',
+              '&:hover': { backgroundColor: '#e0d8f9' }
+            }}
+            onClick={() => setContent(prev => prev + ` ${tag} `)}
+          >
+            {tag}
+          </Button>
+        ))}
+      </Box>
+
+      {/* 미리보기 카드 */}
+      {croppedImages.length > 0 && content.trim() && (
+        <Box sx={{ mt: 3, border: '1px solid #ddd', borderRadius: 2, p: 2 }}>
+          <Typography variant="subtitle2" mb={1} color="#999">미리보기</Typography>
+          <img
+            src={croppedImages[currentIndex]?.url}
+            alt="preview"
+            style={{ width: '100%', borderRadius: 8, marginBottom: 8 }}
+          />
+          <Typography variant="body2">{content}</Typography>
+        </Box>
+      )}
+
+      {/* 업로드 버튼 */}
       <Button
         variant="contained"
         fullWidth
-        sx={{ mt: 2 }}
         onClick={handleUpload}
+        disabled={!content.trim()}
+        sx={{
+          mt: 2,
+          backgroundColor: '#c7b8f5',
+          '&:hover': { backgroundColor: '#a18df2' },
+          '&.Mui-disabled': { backgroundColor: '#e2dcf6', color: '#fff' }
+        }}
       >
         업로드
       </Button>
 
-      {/* Cropper 모달 */}
+      {/* 자르기 모달 */}
       <Modal open={open}>
         <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, height: 600, bgcolor: '#fff', p: 2 }}>
           <Typography variant="subtitle1" mb={1}>사진 {currentIndex + 1} / {images.length}</Typography>
@@ -176,12 +301,27 @@ function PostAdd() {
               onCropComplete={onCropComplete}
             />
           </Box>
-          <Slider min={1} max={3} step={0.1} value={zoom} onChange={(e, val) => setZoom(val)} sx={{ mt: 2 }} />
-          <Button fullWidth variant="contained" sx={{ mt: 2 }} onClick={handleCropDone}>
+          <Slider min={1} max={3} step={0.1} value={zoom} onChange={(e, val) => setZoom(val)} sx={{ mt: 2, color: '#c7b8f5' }} />
+          <Button fullWidth variant="contained" sx={{ mt: 2, backgroundColor: '#c7b8f5', '&:hover': { backgroundColor: '#a18df2' } }} onClick={handleCropDone}>
             {currentIndex + 1 < images.length ? '다음 사진' : '자르기 완료'}
           </Button>
         </Box>
       </Modal>
+
+      <TagUserDialog
+        open={openTagDialog}
+        onClose={() => setOpenTagDialog(false)}
+        onSelect={(user) => {
+          setUserTags(prev => [...prev, {
+            userId: user.userId,
+            nickname: user.nickname,
+            x: tagPos.x,
+            y: tagPos.y,
+            imageIndex: tagPos.imageIndex
+          }]);
+          setOpenTagDialog(false);
+        }}
+      />
     </Box>
   );
 }

@@ -6,7 +6,7 @@ import { jwtDecode } from 'jwt-decode';
 import NewDmDialog from '../components/NewDmDialog';
 import DmRoom from '../components/DmRoom';
 
-export default function Dm({setUnreadCount }) {
+export default function Dm({ setUnreadCount }) {
   const isWide = useMediaQuery('(min-width:1200px)');
   const sidebarWidth = isWide ? 250 : 72;
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -30,7 +30,7 @@ export default function Dm({setUnreadCount }) {
     >
       <DmSidebar onSelectRoom={setSelectedRoom} reload={reload} onReadDm={() => {
         setUnreadCount(prev => Math.max(prev - 1, 0));
-      }}/>
+      }} />
 
       <Box flex={1} display="flex" alignItems="center" justifyContent="center">
         {typeof selectedRoom === 'number' ? (
@@ -47,7 +47,20 @@ export default function Dm({setUnreadCount }) {
             <Typography variant="body2" color="text.secondary" mb={2}>
               친구나 그룹에 비공개 사진과 메시지를 보내보세요
             </Typography>
-            <Button variant="contained" onClick={() => setOpenDialog(true)}>메시지 보내기</Button>
+            <Button
+              variant="contained"
+              onClick={() => setOpenDialog(true)}
+              sx={{
+                backgroundColor: '#CBA3E3',     // 연보라색
+                color: 'white',                 // 텍스트 흰색
+                '&:hover': {
+                  backgroundColor: '#b287d3'   // 진한 연보라 (hover용)
+                }
+              }}
+            >
+              메시지 보내기
+            </Button>
+
           </Box>
         )}
       </Box>

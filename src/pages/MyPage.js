@@ -8,6 +8,8 @@ import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import PersonPinIcon from '@mui/icons-material/PersonPin';
 import { jwtDecode } from 'jwt-decode';
 import SearchIcon from '@mui/icons-material/Search';
+import PostDialog from '../components/PostDialog';
+import EditProfileDialog from '../components/EditProfileDialog';
 
 function MyPage() {
   const token = localStorage.getItem('token');
@@ -18,39 +20,43 @@ function MyPage() {
   const [tabIndex, setTabIndex] = useState(0);
   const [posts, setPosts] = useState([]);
   const [savedPosts, setSavedPosts] = useState([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [userInfo, setUserInfo] = useState(null);
 
   const renderPosts = tabIndex === 0 ? posts : savedPosts;
 
   const headers = {
-    'authorization' : 'Bearer ' + token
+    'authorization': 'Bearer ' + token
   };
 
   useEffect(() => {
-  if (!userId) return;
+    if (!userId) return;
 
-  // ✅ 초기 팔로워/팔로잉 정보 가져오기
-  fetch(`http://localhost:4000/follow/followers/${userId}`, { headers })
-    .then(res => res.json())
-    .then(data => setFollowers(data.followers || []));
-
-  fetch(`http://localhost:4000/follow/followings/${userId}`, { headers })
-    .then(res => res.json())
-    .then(data => setFollowings(data.followings || []));
-}, [userId]);
-
-  useEffect(() => {
-  if (!userId || !openType) return;
-
-  if (openType === 'follower') {
-    fetch('http://localhost:4000/follow/followers/' + userId, { headers })
+    // ✅ 초기 팔로워/팔로잉 정보 가져오기
+    fetch(`http://localhost:4000/follow/followers/${userId}`, { headers })
       .then(res => res.json())
       .then(data => setFollowers(data.followers || []));
-  } else if (openType === 'following') {
-    fetch('http://localhost:4000/follow/followings/' + userId, { headers })
+
+    fetch(`http://localhost:4000/follow/followings/${userId}`, { headers })
       .then(res => res.json())
       .then(data => setFollowings(data.followings || []));
-  }
-}, [openType, userId]);
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId || !openType) return;
+
+    if (openType === 'follower') {
+      fetch('http://localhost:4000/follow/followers/' + userId, { headers })
+        .then(res => res.json())
+        .then(data => setFollowers(data.followers || []));
+    } else if (openType === 'following') {
+      fetch('http://localhost:4000/follow/followings/' + userId, { headers })
+        .then(res => res.json())
+        .then(data => setFollowings(data.followings || []));
+    }
+  }, [openType, userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -64,16 +70,37 @@ function MyPage() {
       .then(data => setSavedPosts(data.list || []));
   }, [userId]);
 
+  useEffect(() => {
+    if (!userId) return;
+
+    fetch('http://localhost:4000/user/info/' + userId, { headers })
+      .then(res => res.json())
+      .then(data => setUserInfo(data));
+  }, [userId, editOpen]); // editOpen이 닫히는 순간 최신 정보 반영
+
 
   const handleOpen = (type) => setOpenType(type);
   const handleClose = () => setOpenType(null);
 
+  const handlePostClick = (post) => {
+    setSelectedPost({
+      ...post,
+      images: post.image_urls // 👈 PostDialog가 기대하는 필드명으로
+    });
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setSelectedPost(null);
+  };
+
   return (
-    <Box sx={{ maxWidth: 935, mx: 'auto', mt: 5 }}>
+    <Box sx={{ maxWidth: 950, mx: 'auto', mt: 5 }}>
       {/* 상단 프로필 */}
-      <Box sx={{ display: 'flex', gap: 8, mb: 5 }}>
+      <Box sx={{ display: 'flex', gap: 8, mb: 5, ml: 20 }}>
         <Avatar
-          src="/assets/profile.jpg"
+          src={userInfo?.profile_img ? 'http://localhost:4000/' + userInfo.profile_img : '/assets/profile.jpg'}
           sx={{
             width: 150,
             height: 150,
@@ -83,7 +110,23 @@ function MyPage() {
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
             <Typography variant="h5">{userId}</Typography>
-            <Button variant="outlined" size="small">프로필 편집</Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setEditOpen(true)}
+              sx={{
+                borderColor: '#b39ddb',
+                color: '#5e35b1',
+                fontWeight: 'bold',
+                '&:hover': {
+                  backgroundColor: '#ede7f6',
+                  borderColor: '#9575cd'
+                }
+              }}
+            >
+              프로필 편집
+            </Button>
+
           </Box>
           <Box sx={{ display: 'flex', gap: 3, mt: 2 }}>
             <Typography>게시물 <strong>{posts.length}</strong></Typography>
@@ -95,23 +138,51 @@ function MyPage() {
             </Typography>
           </Box>
           <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2">연주</Typography>
-            <Typography color="text.secondary">🌸 hello! welcome to my page 🌸</Typography>
+            <Typography sx={{ fontWeight: 'bold' }}>{userInfo?.name || ''}</Typography>
+            <Typography color="text.secondary">{userInfo?.bio || ''}</Typography>
           </Box>
         </Box>
       </Box>
 
       {/* 탭 메뉴 */}
-      <Tabs
-        centered
-        value={tabIndex}
-        onChange={(e, val) => setTabIndex(val)}
-        sx={{ borderTop: '1px solid #ddd', borderBottom: '1px solid #ddd' }}
-      >
-        <Tab icon={<GridOnIcon />} label="게시물" />
-        <Tab icon={<BookmarkBorderIcon />} label="저장됨" />
-        <Tab icon={<PersonPinIcon />} label="태그됨" />
-      </Tabs>
+      <Box sx={{ width: 916, mx: 'auto', mt: 1, ml: 10 }}>
+        <Tabs
+          value={tabIndex}
+          onChange={(e, val) => setTabIndex(val)}
+          variant="fullWidth"
+          TabIndicatorProps={{
+            style: {
+              backgroundColor: '#9575cd'
+            }
+          }}
+          sx={{
+            borderTop: '1px solid #d1c4e9',
+            borderBottom: '1px solid #d1c4e9',
+            '& .MuiTab-root': {
+              fontWeight: 'bold',
+              fontSize: 14,
+              minHeight: 48,
+              color: '#9575cd',
+              textTransform: 'none',
+              transition: 'none',
+              '&.Mui-selected': {
+                color: '#5e35b1',
+                backgroundColor: 'transparent'
+              },
+              '&:hover': {
+                backgroundColor: '#ede7f6'
+              },
+              '&:focus': {
+                backgroundColor: '#ede7f6'
+              }
+            }
+          }}
+        >
+          <Tab icon={<GridOnIcon />} label="게시물" iconPosition="start" disableRipple />
+          <Tab icon={<BookmarkBorderIcon />} label="저장됨" iconPosition="start" disableRipple />
+          <Tab icon={<PersonPinIcon />} label="태그됨" iconPosition="start" disableRipple />
+        </Tabs>
+      </Box>
 
       {/* 게시물 격자 출력 */}
       <Box
@@ -121,57 +192,94 @@ function MyPage() {
           display: 'flex',
           flexWrap: 'wrap',
           gap: 1,
-          mt: 2
+          mt: 2,
+          ml: 10
         }}
       >
-        {renderPosts.map((post) => (
+        {renderPosts.length === 0 ? (
           <Box
-            key={post.post_no}
             sx={{
-              width: 300,
+              width: '100%',
               height: 300,
-              borderRadius: 1,
-              border: '1px solid #ccc',
-              overflow: 'hidden',
-              backgroundColor: post.image_urls.length > 0 ? 'transparent' : '#f5f5f5',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               textAlign: 'center',
-              p: 1
+              color: '#999',
+              fontSize: 16
             }}
           >
-            {post.image_urls.length > 0 ? (
+            {tabIndex === 0 && '게시물이 없습니다.'}
+            {tabIndex === 1 && '저장된 게시물이 없습니다.'}
+            {tabIndex === 2 && '태그된 게시물이 없습니다.'}
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              width: 916,
+              mx: 'auto',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 1,
+              mt: 2
+            }}
+          >
+            {renderPosts.map((post) => (
               <Box
-                component="img"
-                src={'http://localhost:4000' + post.image_urls[0]}
-                alt="post"
+                key={post.post_no}
+                onClick={() => handlePostClick(post)}
                 sx={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover'
-                }}
-              />
-            ) : (
-              <Typography
-                variant="body2"
-                sx={{
-                  display: '-webkit-box',
-                  WebkitBoxOrient: 'vertical',
-                  WebkitLineClamp: 5,
+                  width: 300,
+                  height: 300,
+                  borderRadius: 1,
+                  border: '1px solid #d1c4e9',
                   overflow: 'hidden',
-                  whiteSpace: 'pre-line',
-                  fontSize: '14px',
-                  color: '#333'
+                  backgroundColor: post.image_urls.length > 0 ? 'transparent' : '#f5f0ff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  p: 1,
+                  cursor: 'pointer',
+                  transition: '0.2s',
+                  '&:hover': {
+                    backgroundColor: '#f3e5f5',
+                    opacity: 0.9
+                  }
                 }}
               >
-                {post.content}
-              </Typography>
-            )}
+                {post.image_urls.length > 0 ? (
+                  <Box
+                    component="img"
+                    src={'http://localhost:4000' + post.image_urls[0]}
+                    alt="post"
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 5,
+                      overflow: 'hidden',
+                      whiteSpace: 'pre-line',
+                      fontSize: '14px',
+                      color: '#333'
+                    }}
+                  >
+                    {post.content}
+                  </Typography>
+                )}
+              </Box>
+            ))}
           </Box>
-        ))}
+        )}
       </Box>
-
 
       {/* 팔로워/팔로잉 다이얼로그 */}
       <Dialog open={!!openType} onClose={handleClose} fullWidth>
@@ -307,6 +415,19 @@ function MyPage() {
           </List>
         </DialogContent>
       </Dialog>
+      {selectedPost && (
+        <PostDialog
+          open={dialogOpen}
+          onClose={handleDialogClose}
+          post={selectedPost}
+        />
+      )}
+
+      <EditProfileDialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        user={userInfo}
+      />
     </Box>
   );
 }
