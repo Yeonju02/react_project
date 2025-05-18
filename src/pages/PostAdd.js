@@ -70,6 +70,7 @@ function PostAdd() {
     });
     formData.append('userId', userId);
     formData.append('content', content);
+    formData.append('taggedUsers', JSON.stringify(userTags));
 
     try {
       const res = await fetch('http://localhost:4000/post', {
@@ -84,6 +85,7 @@ function PostAdd() {
         const tags = extractHashtags(content);
         setTagNames(tags);
 
+        // 해시태그 저장
         if (tags.length > 0) {
           await fetch('http://localhost:4000/post/hashtags', {
             method: 'POST',
@@ -92,12 +94,30 @@ function PostAdd() {
           });
         }
 
+        // 유저 태그 저장
         if (userTags.length > 0) {
           await fetch('http://localhost:4000/post/user-tags', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ postNo, userTags })
           });
+
+          // 태그 알림 전송
+          for (const tag of userTags) {
+            if (tag.userId !== userId) {
+              await fetch('http://localhost:4000/notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  receiver_id: tag.userId,
+                  sender_id: userId,
+                  type: 'tag',
+                  content: `${userId}님이 회원님을 게시글에 태그했습니다.`,
+                  target_post: postNo
+                })
+              });
+            }
+          }
         }
 
         alert('게시글이 등록되었습니다.');
@@ -136,6 +156,11 @@ function PostAdd() {
     setTagPos({ x, y, imageIndex: currentIndex });
     setOpenTagDialog(true);
   };
+
+  const handleRemoveTag = (index) => {
+    setUserTags(prev => prev.filter((_, i) => i !== index));
+  };
+
 
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
@@ -179,6 +204,7 @@ function PostAdd() {
             .map((tag, idx) => (
               <Box
                 key={idx}
+                onClick={() => handleRemoveTag(idx)}
                 sx={{
                   position: 'absolute',
                   top: `${tag.y * 100}%`,
@@ -186,12 +212,19 @@ function PostAdd() {
                   transform: 'translate(-50%, -50%)',
                   bgcolor: 'rgba(0,0,0,0.6)',
                   color: '#fff',
-                  px: 1,
-                  borderRadius: 1,
-                  fontSize: 12
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: 2,
+                  fontSize: 14,
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  zIndex: 10,
+                  '&:hover': {
+                    bgcolor: 'rgba(255,0,0,0.6)', // hover 시 빨간색으로 경고
+                  },
                 }}
               >
-                @{tag.nickname}
+                @{tag.userId} ✕
               </Box>
             ))}
           <IconButton onClick={showPrev} sx={{ position: 'absolute', top: '50%', left: 0, transform: 'translateY(-50%)', color: '#7e6ae8' }}>
@@ -256,19 +289,6 @@ function PostAdd() {
           </Button>
         ))}
       </Box>
-
-      {/* 미리보기 카드 */}
-      {croppedImages.length > 0 && content.trim() && (
-        <Box sx={{ mt: 3, border: '1px solid #ddd', borderRadius: 2, p: 2 }}>
-          <Typography variant="subtitle2" mb={1} color="#999">미리보기</Typography>
-          <img
-            src={croppedImages[currentIndex]?.url}
-            alt="preview"
-            style={{ width: '100%', borderRadius: 8, marginBottom: 8 }}
-          />
-          <Typography variant="body2">{content}</Typography>
-        </Box>
-      )}
 
       {/* 업로드 버튼 */}
       <Button

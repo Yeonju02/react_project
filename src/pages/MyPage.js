@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Box, Avatar, Typography, Tabs, Tab, Dialog, DialogTitle,
   DialogContent, List, ListItem, ListItemAvatar, ListItemText, Button
@@ -10,6 +10,10 @@ import { jwtDecode } from 'jwt-decode';
 import SearchIcon from '@mui/icons-material/Search';
 import PostDialog from '../components/PostDialog';
 import EditProfileDialog from '../components/EditProfileDialog';
+import { debounce } from 'lodash';
+import CircularProgress from '@mui/material/CircularProgress';
+import InputAdornment from '@mui/material/InputAdornment';
+
 
 function MyPage() {
   const token = localStorage.getItem('token');
@@ -24,12 +28,42 @@ function MyPage() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [loading, setLoading] = useState(false);
+
 
   const renderPosts = tabIndex === 0 ? posts : savedPosts;
 
-  const headers = {
+  const headers = useMemo(() => ({
     'authorization': 'Bearer ' + token
-  };
+  }), [token]);
+
+
+  const fetchFollowList = useCallback(
+    debounce((type, keyword) => {
+      setLoading(true);
+
+      const endpoint = type === 'follower' ? 'followers' : 'followings';
+      const query = keyword ? `?q=${encodeURIComponent(keyword)}` : '';
+
+      fetch(`http://localhost:4000/follow/${endpoint}/${userId}${query}`, {
+        headers
+      })
+        .then(res => res.json())
+        .then(data => {
+          // 최소 500ms 뒤에 setState 실행
+          setTimeout(() => {
+            if (type === 'follower') setFollowers(data.followers || []);
+            else setFollowings(data.followings || []);
+            setLoading(false);
+          }, 500); // <- 여기서 결과도 500ms 뒤에 적용
+        })
+        .catch(() => {
+          setTimeout(() => setLoading(false), 500);
+        });
+    }, 300),
+    [userId, headers]
+  );
 
   useEffect(() => {
     if (!userId) return;
@@ -46,17 +80,8 @@ function MyPage() {
 
   useEffect(() => {
     if (!userId || !openType) return;
-
-    if (openType === 'follower') {
-      fetch('http://localhost:4000/follow/followers/' + userId, { headers })
-        .then(res => res.json())
-        .then(data => setFollowers(data.followers || []));
-    } else if (openType === 'following') {
-      fetch('http://localhost:4000/follow/followings/' + userId, { headers })
-        .then(res => res.json())
-        .then(data => setFollowings(data.followings || []));
-    }
-  }, [openType, userId]);
+    fetchFollowList(openType, searchKeyword);
+  }, [userId, openType, searchKeyword, fetchFollowList]);
 
   useEffect(() => {
     if (!userId) return;
@@ -291,13 +316,21 @@ function MyPage() {
             <Box
               component="input"
               placeholder="검색"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value.toLowerCase())}
               sx={{
                 width: '100%',
                 p: 1,
                 border: '1px solid #ccc',
                 borderRadius: 1,
                 mb: 1,
-                fontSize: 14
+                fontSize: 14,
+                backgroundImage: loading
+                  ? `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" stroke="%239575cd" stroke-width="10" fill="none" stroke-dasharray="164.93361431346415 56.97787143782138"><animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" keyTimes="0;1" values="0 50 50;360 50 50"/></circle></svg>')`
+                  : '',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 10px center',
+                backgroundSize: '16px 16px'
               }}
             />
           </Box>
@@ -316,10 +349,12 @@ function MyPage() {
               >
                 <SearchIcon sx={{ fontSize: 50, mb: 1 }} />
                 <Typography fontSize={14}>
-                  회원님
-                  {openType === 'follower'
-                    ? '을 팔로우하는 사람이 여기에 표시됩니다'
-                    : '이 팔로우하는 사람이 여기에 표시됩니다'}
+                  {searchKeyword
+                    ? '검색 결과가 없습니다.'
+                    : `회원님${openType === 'follower'
+                      ? '을 팔로우하는 사람이 여기에 표시됩니다'
+                      : '이 팔로우하는 사람이 여기에 표시됩니다'
+                    }`}
                 </Typography>
               </Box>
             ) : (
@@ -393,7 +428,7 @@ function MyPage() {
                 >
                   <ListItemAvatar>
                     <Avatar
-                      src={user.profile_img || '/assets/profile.jpg'}
+                      src={user.profile_img ? 'http://localhost:4000/' + user.profile_img : '/assets/profile.jpg'}
                       sx={{ width: 44, height: 44 }}
                     />
                   </ListItemAvatar>

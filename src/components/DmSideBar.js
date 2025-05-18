@@ -6,7 +6,7 @@ import { jwtDecode } from 'jwt-decode';
 import NewDmDialog from './NewDmDialog';
 import NoteAltRoundedIcon from '@mui/icons-material/NoteAltRounded';
 
-export default function DmSidebar({ onSelectRoom, reload, onReadDm }) {
+export default function DmSidebar({ selectedRoomNo, onSelectRoom, reload, onReadDm }) {
   const [dmList, setDmList] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
 
@@ -77,15 +77,23 @@ export default function DmSidebar({ onSelectRoom, reload, onReadDm }) {
         const isUnread = dm.unread;
 
         return (
-          <Box key={idx} px={2} py={1} display="flex" alignItems="center"
+          <Box
+            key={idx}
+            px={2}
+            py={1}
+            display="flex"
+            alignItems="center"
+            onClick={() => handleReadDm(dm.room_no, isUnread)}
             sx={{
               cursor: 'pointer',
-              '&:hover': { backgroundColor: '#f5f5f5' }
+              backgroundColor: selectedRoomNo === dm.room_no ? '#e0e0e0' : 'transparent', // ⭐ 여기
+              '&:hover': {
+                backgroundColor: selectedRoomNo === dm.room_no ? '#d6d6d6' : '#f5f5f5'
+              }
             }}
-            onClick={() => handleReadDm(dm.room_no, isUnread)}
           >
             <Avatar
-              src={dm.profile_img || '/img/default-profile.png'}
+              src={dm.profile_img ? `http://localhost:4000/${dm.profile_img}` : '/img/default-profile.png'}
               sx={{ width: 44, height: 44, mr: 1 }}
             />
             <Box flex={1} overflow="hidden">

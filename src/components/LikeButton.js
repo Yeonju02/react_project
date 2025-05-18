@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import heartEmpty from '../assets/heart-empty.png';
 import heartFilled from '../assets/heart-filled.png';
 import '../styles/likeButton.css'; // 애니메이션용 CSS
 
-function LikeButton({ postNo, initialLiked, initialCount, onLike, onLikeToggle   }) {
+function LikeButton({ postNo, initialLiked, initialCount, onLike, onLikeToggle }) {
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialCount || 0);
   const [animate, setAnimate] = useState(false);
+
+  useEffect(() => {
+    setLiked(initialLiked);
+  }, [initialLiked]);
+
+  useEffect(() => {
+    setLikeCount(initialCount);
+  }, [initialCount]);
+
 
   // 좋아요 토글
   const toggleLike = async () => {
@@ -17,7 +26,7 @@ function LikeButton({ postNo, initialLiked, initialCount, onLike, onLikeToggle  
         method: liked ? 'DELETE' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          "authorization" : "Bearer " + token
+          "authorization": "Bearer " + token
         }
       };
 
@@ -30,7 +39,7 @@ function LikeButton({ postNo, initialLiked, initialCount, onLike, onLikeToggle  
         if (!liked) triggerAnimation();
 
         if (typeof onLikeToggle === 'function') {
-          onLikeToggle(newCount);
+          onLikeToggle(newCount, !liked);
         }
 
         if (!liked && typeof onLike === 'function') {
@@ -50,16 +59,16 @@ function LikeButton({ postNo, initialLiked, initialCount, onLike, onLikeToggle  
 
   return (
     <>
-        <div className="like-container">
-            <img
-                src={liked ? heartFilled : heartEmpty}
-                alt="like"
-                className={'heart-icon' + (animate ? ' animate' : '')}
-                onClick={toggleLike}
-            />
-        </div>
+      <div className="like-container">
+        <img
+          src={liked ? heartFilled : heartEmpty}
+          alt="like"
+          className={'heart-icon' + (animate ? ' animate' : '')}
+          onClick={toggleLike}
+        />
+      </div>
     </>
-    
+
   );
 }
 

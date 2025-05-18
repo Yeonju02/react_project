@@ -8,7 +8,7 @@ import {
   Link
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import logo from '../assets/instagram-logo.png'; // 이미지 경로 확인
+import logo from '../assets/logo.png'; // 로고 이미지 경로
 
 function Join() {
   const [userId, setUserId] = useState('');
@@ -23,11 +23,10 @@ function Join() {
   };
 
   const handleJoin = async () => {
-
     if (!isValidEmail(email)) {
-        alert('올바른 이메일 형식이 아닙니다.');
-        return;
-      }
+      alert('올바른 이메일 형식이 아닙니다.');
+      return;
+    }
 
     try {
       const res = await fetch('http://localhost:4000/user/join', {
@@ -62,10 +61,10 @@ function Join() {
           <img
             src={logo}
             alt="Instagram"
-            style={{ height: 100 }}
+            style={{ height: 90, marginBottom: 10 }}
           />
 
-          <Typography variant="h6" mb={2}>
+          <Typography variant="h6" mb={2} sx={{ color: '#ba9fe3' }}>
             계정을 만들어 친구들과 사진을 공유하고 소통하세요.
           </Typography>
 
@@ -76,6 +75,16 @@ function Join() {
             margin="dense"
             value={userId}
             onChange={(e) => setUserId(e.target.value)}
+            sx={{
+              '& label.Mui-focused': {
+                color: '#ba9fe3',
+              },
+              '& .MuiOutlinedInput-root': {
+                '&.Mui-focused fieldset': {
+                  borderColor: '#ba9fe3',
+                }
+              }
+            }}
           />
           <TextField
             fullWidth
@@ -85,6 +94,16 @@ function Join() {
             margin="dense"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            sx={{
+              '& label.Mui-focused': {
+                color: '#ba9fe3',
+              },
+              '& .MuiOutlinedInput-root': {
+                '&.Mui-focused fieldset': {
+                  borderColor: '#ba9fe3',
+                }
+              }
+            }}
           />
           <TextField
             fullWidth
@@ -93,6 +112,16 @@ function Join() {
             margin="dense"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            sx={{
+              '& label.Mui-focused': {
+                color: '#ba9fe3',
+              },
+              '& .MuiOutlinedInput-root': {
+                '&.Mui-focused fieldset': {
+                  borderColor: '#ba9fe3',
+                }
+              }
+            }}
           />
           <TextField
             fullWidth
@@ -101,12 +130,29 @@ function Join() {
             margin="dense"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            sx={{
+              '& label.Mui-focused': {
+                color: '#ba9fe3',
+              },
+              '& .MuiOutlinedInput-root': {
+                '&.Mui-focused fieldset': {
+                  borderColor: '#ba9fe3',
+                }
+              }
+            }}
           />
 
           <Button
             fullWidth
             variant="contained"
-            sx={{ mt: 2, bgcolor: '#0095f6', textTransform: 'none' }}
+            sx={{
+              mt: 2,
+              bgcolor: '#ba9fe3',
+              textTransform: 'none',
+              '&:hover': {
+                bgcolor: '#a17de3'
+              }
+            }}
             onClick={handleJoin}
           >
             가입하기
@@ -116,7 +162,16 @@ function Join() {
         <Paper elevation={1} sx={{ p: 2, mt: 2, textAlign: 'center' }}>
           <Typography variant="body2">
             계정이 있으신가요?{' '}
-            <Link href="/login" underline="hover" color="#0095f6">
+            <Link
+              href="/login"
+              underline="hover"
+              sx={{
+                color: '#ba9fe3',
+                '&:hover': {
+                  color: '#a17de3'
+                }
+              }}
+            >
               로그인
             </Link>
           </Typography>

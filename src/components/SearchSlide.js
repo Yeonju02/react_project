@@ -4,6 +4,7 @@ import {
 } from '@mui/material';
 import PostDialog from './PostDialog';
 import { useNavigate } from 'react-router-dom';
+import { CircularProgress } from '@mui/material';
 
 function SearchSlide({ open, onClose, sidebarWidth = 72 }) {
   const [keyword, setKeyword] = useState('');
@@ -12,6 +13,7 @@ function SearchSlide({ open, onClose, sidebarWidth = 72 }) {
   const [selectedPost, setSelectedPost] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!keyword) {
@@ -19,11 +21,23 @@ function SearchSlide({ open, onClose, sidebarWidth = 72 }) {
       return;
     }
 
-    const endpoint = tab === 0 ? '/search/posts' : '/search/users';
-    fetch("http://localhost:4000" + endpoint + "?q=" + encodeURIComponent(keyword))
-      .then(res => res.json())
-      .then(data => setResults(data.list || []))
-      .catch(err => console.error('검색 오류:', err));
+    const fetchData = async () => {
+      setLoading(true); // 로딩 시작
+      const endpoint = tab === 0 ? '/search/posts' : '/search/users';
+      try {
+        const res = await fetch("http://localhost:4000" + endpoint + "?q=" + encodeURIComponent(keyword));
+        const data = await res.json();
+        setTimeout(() => { // 결과도 늦게 보여주기
+          setResults(data.list || []);
+          setLoading(false); // 로딩 종료
+        }, 1000); // 0.5초 딜레이
+      } catch (err) {
+        console.error('검색 오류:', err);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [keyword, tab]);
 
   const handleCardClick = async (item) => {
@@ -70,13 +84,13 @@ function SearchSlide({ open, onClose, sidebarWidth = 72 }) {
             sx={{
               '& .MuiOutlinedInput-root': {
                 '& fieldset': {
-                  borderColor: '#ce93d8', // 기본 테두리
+                  borderColor: '#c7b8f5', // 기본 테두리
                 },
                 '&:hover fieldset': {
-                  borderColor: '#ba68c8', // hover 시 테두리
+                  borderColor: '#a18df2', // hover 시 테두리
                 },
                 '&.Mui-focused fieldset': {
-                  borderColor: '#ab47bc', // 포커스 시 테두리
+                  borderColor: '#a18df2', // 포커스 시 테두리
                 },
               }
             }}
@@ -84,16 +98,17 @@ function SearchSlide({ open, onClose, sidebarWidth = 72 }) {
 
           <Tabs value={tab} onChange={(_, newVal) => setTab(newVal)} centered
             TabIndicatorProps={{
-              style: { backgroundColor: '#ba68c8' } // 밑줄 색상
+              style: { backgroundColor: '#a18df2' }
             }}
-            textColor="secondary"
+            textColor="inherit"
             sx={{
               mt: 2,
               '& .MuiTab-root': {
-                color: '#9e9e9e', // 기본 글자색
+                color: '#bbb', // 기본 탭 텍스트 연보라 계열
+                fontWeight: 'bold'
               },
               '& .Mui-selected': {
-                color: '#8e24aa', // 선택된 탭 글자색
+                color: '#a18df2',
               }
             }}>
             <Tab label="게시글" />
@@ -102,7 +117,11 @@ function SearchSlide({ open, onClose, sidebarWidth = 72 }) {
 
           <Divider sx={{ my: 1 }} />
 
-          {results.length === 0 ? (
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+              <CircularProgress sx={{ color: '#a18df2' }} />
+            </Box>
+          ) : results.length === 0 ? (
             <Typography sx={{ mt: 4, textAlign: 'center', color: 'gray' }}>
               검색 결과가 없습니다.
             </Typography>

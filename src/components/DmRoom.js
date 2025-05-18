@@ -10,7 +10,7 @@ import PostDialog from './PostDialog';
 
 const socket = io('http://localhost:4000', { autoConnect: false }); // 한 번만 생성
 
-export default function DmRoom({ roomNo, onMessageSend, onDeleteRoom  }) {
+export default function DmRoom({ roomNo, onMessageSend, onDeleteRoom }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [otherUser, setOtherUser] = useState(null);
@@ -82,16 +82,19 @@ export default function DmRoom({ roomNo, onMessageSend, onDeleteRoom  }) {
     });
     setOpenConfirm(false);
     if (onMessageSend) onMessageSend();         // 목록 갱신
-    if (onDeleteRoom) onDeleteRoom(); 
+    if (onDeleteRoom) onDeleteRoom();
   };
 
-   return (
+  return (
     <Box width="100%" height="100%" display="flex" flexDirection="column" overflow="hidden">
-      
+
       {/* 상단: 유저 정보 + 채팅 삭제 */}
       <Box display="flex" justifyContent="space-between" alignItems="center" px={2} py={1.5} flexShrink={0}>
         <Box display="flex" alignItems="center">
-          <Avatar sx={{ width: 40, height: 40, mr: 1 }} src={otherUser?.profile_img || ''} />
+          <Avatar
+            sx={{ width: 40, height: 40, mr: 1 }}
+            src={otherUser?.profile_img ? `http://localhost:4000/${otherUser.profile_img}` : '/img/default-profile.png'}
+          />
           <Typography fontWeight="bold">{otherUser?.name || ''}</Typography>
         </Box>
         <Button variant="text" color="error" size="small" onClick={() => setOpenConfirm(true)}>
@@ -116,11 +119,11 @@ export default function DmRoom({ roomNo, onMessageSend, onDeleteRoom  }) {
 
               const postUserId = userLine.replace('@', '').replace('님의 게시글', '').trim();
 
-             return (
+              return (
                 <Box
                   sx={{
                     display: 'inline-block',
-                    bgcolor: isMine ? '#D0E6FF' : '#eee',
+                    bgcolor: isMine ? '#f3efff' : '#eee',
                     px: 1,
                     py: 1,
                     borderRadius: 2,
@@ -138,7 +141,7 @@ export default function DmRoom({ roomNo, onMessageSend, onDeleteRoom  }) {
                 >
                   <SharedPostCard postUserId={postUserId} content={contentLine} image={imagePath} />
                 </Box>
-                
+
               );
             }
 
@@ -147,7 +150,7 @@ export default function DmRoom({ roomNo, onMessageSend, onDeleteRoom  }) {
               <Typography
                 sx={{
                   display: 'inline-block',
-                  bgcolor: isMine ? '#D0E6FF' : '#eee',
+                  bgcolor: isMine ? '#f3efff' : '#eee',
                   px: 2,
                   py: 1,
                   borderRadius: 2,
@@ -181,9 +184,34 @@ export default function DmRoom({ roomNo, onMessageSend, onDeleteRoom  }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-          sx={{ bgcolor: '#f9f9f9', borderRadius: 2 }}
+          sx={{
+            bgcolor: '#faf8ff',              // 연보라 배경
+            borderRadius: 2,
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: '#c7b8f5',      // 테두리 연보라
+              },
+              '&:hover fieldset': {
+                borderColor: '#a18df2',      // 호버 시 진한 연보라
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#a18df2',      // 포커스 시 진한 연보라
+              },
+            }
+          }}
         />
-        <Button variant="contained" onClick={sendMessage} sx={{ ml: 1, minWidth: 80 }}>전송</Button>
+        <Button
+          variant="contained"
+          onClick={sendMessage}
+          sx={{
+            ml: 1,
+            minWidth: 80,
+            backgroundColor: '#c7b8f5',
+            '&:hover': { backgroundColor: '#a18df2' }
+          }}
+        >
+          전송
+        </Button>
       </Box>
 
       <PostDialog

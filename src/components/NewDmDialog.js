@@ -27,7 +27,8 @@ export default function NewDmDialog({ open, onClose, onCreateRoom }) {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth>
-      <DialogTitle>새로운 메시지</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 'bold', color: '#7e57c2' }}>새로운 메시지</DialogTitle>
+      
       <DialogContent>
         <TextField
           placeholder="검색..."
@@ -35,21 +36,48 @@ export default function NewDmDialog({ open, onClose, onCreateRoom }) {
           fullWidth
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
-          sx={{ mb: 2 }}
+          sx={{
+            mb: 2,
+            '& .MuiInput-underline:before': { borderBottomColor: '#c7b8f5' },
+            '& .MuiInput-underline:hover:before': { borderBottomColor: '#a18df2' },
+            '& .MuiInput-underline:after': { borderBottomColor: '#a18df2' }
+          }}
         />
 
         <RadioGroup value={selected} onChange={(e) => setSelected(e.target.value)}>
           {filtered.map((user) => (
-            <Box key={user.user_id} display="flex" alignItems="center" px={1.5} py={1}>
-              <Avatar src={user.profile_img || '/img/default-profile.png'} sx={{ mr: 1 }} />
+            <Box
+              key={user.user_id}
+              display="flex"
+              alignItems="center"
+              px={1.5}
+              py={1}
+              sx={{
+                borderRadius: 1,
+                backgroundColor: selected === user.user_id ? '#f3e5f5' : 'transparent',
+                '&:hover': {
+                  backgroundColor: '#f9f4ff'
+                }
+              }}
+            >
+              <Avatar
+                src={user.profile_img ? `http://localhost:4000/${user.profile_img}` : '/img/default-profile.png'}
+                sx={{ mr: 1 }}
+              />
               <Box flexGrow={1}>
                 <Typography>{user.name}</Typography>
               </Box>
-              <Radio value={user.user_id} />
+              <Radio value={user.user_id} sx={{
+                color: '#a18df2',
+                '&.Mui-checked': {
+                  color: '#7e57c2'
+                }
+              }} />
             </Box>
           ))}
         </RadioGroup>
       </DialogContent>
+
       <DialogActions>
         <Button
           variant="contained"
@@ -59,6 +87,17 @@ export default function NewDmDialog({ open, onClose, onCreateRoom }) {
             onClose();
           }}
           fullWidth
+          sx={{
+            backgroundColor: '#c7b8f5',
+            color: '#fff',
+            '&:hover': {
+              backgroundColor: '#a18df2'
+            },
+            '&.Mui-disabled': {
+              backgroundColor: '#e2dcf6',
+              color: '#fff'
+            }
+          }}
         >
           채팅
         </Button>

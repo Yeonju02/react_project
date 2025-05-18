@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Slide, Box, Typography, Avatar} from '@mui/material';
+import { Slide, Box, Typography, Avatar } from '@mui/material';
 import { jwtDecode } from 'jwt-decode';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -36,6 +36,7 @@ export default function NotificationSlide({ open, onClose, sidebarWidth = 72 }) 
           }}
         >
           <Typography variant="h6" sx={{ p: 2, fontWeight: 'bold' }}>알림</Typography>
+
           {notifications.length === 0 ? (
             <Box
               sx={{
@@ -58,82 +59,118 @@ export default function NotificationSlide({ open, onClose, sidebarWidth = 72 }) 
               </Typography>
             </Box>
           ) : (
-            notifications.map((noti) => (
-              <Box
-              key={noti.noti_no}
-              onClick={async () => {
-                if (!noti.target_post) return;
-
-                try {
-
-                  await fetch('http://localhost:4000/notification/read/' + noti.noti_no, {
-                    method: 'POST'
-                  });
-
-                  setNotifications(prev =>
-                    prev.map(n =>
-                      n.noti_no === noti.noti_no ? { ...n, is_read: 'Y' } : n
-                    )
-                  );
-
-                  const res = await fetch('http://localhost:4000/post/' + noti.target_post);
-                  const data = await res.json();
-
-                  if (data.success) {
-                    setSelectedPost(data.post);
-                    setDialogOpen(true);
-                  }
-                } catch (err) {
-                  console.error("게시글 로딩 실패:", err);
+            notifications.map((noti) => {
+              const getStyle = (type) => {
+                switch (type) {
+                  case 'like': return { color: '#ff5c8a', label: '좋아요' };
+                  case 'comment': return { color: '#3498db', label: '댓글' };
+                  case 'reply': return { color: '#27ae60', label: '답글' };
+                  case 'tag': return { color: '#9b59b6', label: '태그' };
+                  default: return { color: '#999', label: '' };
                 }
-              }}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                p: 1.5,
-                cursor: 'pointer',
-                '&:hover': { backgroundColor: '#f0f0f0' },
-              }}
-            >
-              <Avatar
-                src={noti.sender_profile || '/assets/profile.jpg'}
-                sx={{ width: 40, height: 40, mr: 2 }}
-              />
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="body2">{noti.content}</Typography>
-                <Typography variant="caption" color="textSecondary">
-                  {formatDistanceToNow(new Date(noti.created_at), { addSuffix: true, locale: ko })}
-                </Typography>
-              </Box>
-              {noti.thumbnail && noti.thumbnail !== 'null' && (
-                <img
-                  src={'http://localhost:4000' + noti.thumbnail}
-                  alt="썸네일"
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 4,
-                    objectFit: 'cover',
-                    marginLeft: 8
+              };
+              const { color, label } = getStyle(noti.type);
+
+              return (
+                <Box
+                  key={noti.noti_no}
+                  onClick={async () => {
+                    let postNo = noti.target_post;
+
+                    // 댓글 또는 답글이라면 target_post가 없을 수 있으므로 댓글에서 추출
+                    if (!postNo && noti.target_comment) {
+                      try {
+                        const res = await fetch(`http://localhost:4000/comment/${noti.target_comment}/post`);
+                        const data = await res.json();
+                        if (data.success) {
+                          postNo = data.postNo;
+                        } else {
+                          console.warn('댓글로부터 게시글 번호 가져오기 실패');
+                          return;
+                        }
+                      } catch (err) {
+                        console.error('댓글 기반 게시글 조회 실패:', err);
+                        return;
+                      }
+                    }
+
+                    if (!postNo) return;
+
+                    try {
+                      await fetch(`http://localhost:4000/notification/read/${noti.noti_no}`, {
+                        method: 'POST'
+                      });
+
+                      setNotifications(prev =>
+                        prev.map(n =>
+                          n.noti_no === noti.noti_no ? { ...n, is_read: 'Y' } : n
+                        )
+                      );
+
+                      const res = await fetch(`http://localhost:4000/post/${postNo}`);
+                      const data = await res.json();
+
+                      if (data.success && data.post) {
+                        setSelectedPost(data.post);
+                        setDialogOpen(true);
+                      }
+                    } catch (err) {
+                      console.error("게시글 로딩 실패:", err);
+                    }
                   }}
-                />
-              )}
-            </Box>
-            ))
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    p: 1.5,
+                    cursor: 'pointer',
+                    backgroundColor: noti.is_read === 'N' ? '#f8f4ff' : 'white',
+                    borderLeft: `4px solid ${color}`,
+                    '&:hover': { backgroundColor: '#f0f0f0' },
+                  }}
+                >
+                  <Avatar
+                    src={noti.sender_profile || '/assets/profile.jpg'}
+                    sx={{ width: 40, height: 40, mr: 2 }}
+                  />
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: noti.is_read === 'N' ? 600 : 400 }}>
+                      <span style={{ color }}>{label}</span> - {noti.content}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      {formatDistanceToNow(new Date(noti.created_at), { addSuffix: true, locale: ko })}
+                    </Typography>
+                  </Box>
+                  {noti.thumbnail && noti.thumbnail !== 'null' && (
+                    <img
+                      src={'http://localhost:4000' + noti.thumbnail}
+                      alt="썸네일"
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 4,
+                        objectFit: 'cover',
+                        marginLeft: 8
+                      }}
+                    />
+                  )}
+                </Box>
+              );
+            })
           )}
         </Box>
       </Slide>
+
       {selectedPost && (
         <PostDialog
           open={dialogOpen}
           onClose={() => {
             setDialogOpen(false);
-            setSelectedPost(null); // 다이얼로그 닫힐 때 초기화도 해줘야 함
+            setSelectedPost(null);
           }}
           post={selectedPost}
         />
       )}
     </div>
-    
   );
+
 }

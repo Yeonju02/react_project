@@ -28,9 +28,14 @@ export default function Dm({ setUnreadCount }) {
         overflow: 'hidden'
       }}
     >
-      <DmSidebar onSelectRoom={setSelectedRoom} reload={reload} onReadDm={() => {
-        setUnreadCount(prev => Math.max(prev - 1, 0));
-      }} />
+      <DmSidebar
+        selectedRoomNo={selectedRoom} // ✅ 현재 선택된 채팅방 번호 전달
+        onSelectRoom={setSelectedRoom}
+        reload={reload}
+        onReadDm={() => {
+          setUnreadCount(prev => Math.max(prev - 1, 0));
+        }}
+      />
 
       <Box flex={1} display="flex" alignItems="center" justifyContent="center">
         {typeof selectedRoom === 'number' ? (
@@ -51,16 +56,15 @@ export default function Dm({ setUnreadCount }) {
               variant="contained"
               onClick={() => setOpenDialog(true)}
               sx={{
-                backgroundColor: '#CBA3E3',     // 연보라색
-                color: 'white',                 // 텍스트 흰색
+                backgroundColor: '#CBA3E3',
+                color: 'white',
                 '&:hover': {
-                  backgroundColor: '#b287d3'   // 진한 연보라 (hover용)
+                  backgroundColor: '#b287d3'
                 }
               }}
             >
               메시지 보내기
             </Button>
-
           </Box>
         )}
       </Box>

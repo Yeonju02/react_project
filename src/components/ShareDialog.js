@@ -9,9 +9,8 @@ export default function ShareDialog({ open, onClose, post, userId }) {
   const [users, setUsers] = useState([]);
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState('');
-  const token = localStorage.getItem('token');
   const [message, setMessage] = useState('');
-
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
     if (!open) return;
@@ -40,18 +39,18 @@ export default function ShareDialog({ open, onClose, post, userId }) {
 
   const handleSend = () => {
     fetch('http://localhost:4000/dm/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         post,
         receivers: selected,
         senderId: userId,
-        message // 추가된 메시지
-        })
+        message
+      })
     });
     setMessage('');
     onClose();
-    };
+  };
 
   const filteredUsers = users.filter(user =>
     user.userId.toLowerCase().includes(search.toLowerCase())
@@ -59,7 +58,7 @@ export default function ShareDialog({ open, onClose, post, userId }) {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle sx={{ textAlign: 'center' }}>공유</DialogTitle>
+      <DialogTitle sx={{ textAlign: 'center', color: '#ba9fe3' }}>공유</DialogTitle>
       <DialogContent sx={{ px: 2 }}>
         <TextField
           fullWidth
@@ -67,7 +66,14 @@ export default function ShareDialog({ open, onClose, post, userId }) {
           placeholder="검색"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          sx={{ mb: 2 }}
+          sx={{
+            mb: 2,
+            '& .MuiOutlinedInput-root': {
+              '&.Mui-focused fieldset': {
+                borderColor: '#ba9fe3',
+              }
+            }
+          }}
         />
 
         <Grid container spacing={2}>
@@ -78,7 +84,7 @@ export default function ShareDialog({ open, onClose, post, userId }) {
                 <Box
                   sx={{
                     position: 'relative',
-                    border: isSelected ? '2px solid #1976d2' : '2px solid transparent',
+                    border: isSelected ? '2px solid #ba9fe3' : '2px solid transparent',
                     borderRadius: '50%',
                     width: 64,
                     height: 64,
@@ -87,7 +93,7 @@ export default function ShareDialog({ open, onClose, post, userId }) {
                   }}
                 >
                   <Avatar
-                    src={user.profileImgUrl || ''}
+                    src={user.profile_img ? `http://localhost:4000/${user.profile_img}` : ''}
                     alt={user.userId}
                     sx={{ width: 60, height: 60 }}
                   />
@@ -97,7 +103,7 @@ export default function ShareDialog({ open, onClose, post, userId }) {
                         position: 'absolute',
                         bottom: -6,
                         right: -6,
-                        color: '#1976d2',
+                        color: '#ba9fe3',
                         backgroundColor: 'white',
                         borderRadius: '50%',
                         fontSize: 18
@@ -105,7 +111,7 @@ export default function ShareDialog({ open, onClose, post, userId }) {
                     />
                   )}
                 </Box>
-                <Typography variant="caption" align="center" display="block" noWrap>
+                <Typography variant="caption" align="center" display="block" noWrap sx={{ color: '#ba9fe3' }}>
                   {user.userId}
                 </Typography>
               </Grid>
@@ -114,16 +120,22 @@ export default function ShareDialog({ open, onClose, post, userId }) {
         </Grid>
 
         <TextField
-            placeholder="메시지 쓰기..."
-            fullWidth
-            size="small"
-            multiline
-            rows={2}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            sx={{ mt: 2 }}
+          placeholder="메시지 쓰기..."
+          fullWidth
+          size="small"
+          multiline
+          rows={2}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          sx={{
+            mt: 2,
+            '& .MuiOutlinedInput-root': {
+              '&.Mui-focused fieldset': {
+                borderColor: '#ba9fe3',
+              }
+            }
+          }}
         />
-
       </DialogContent>
 
       <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
@@ -131,7 +143,13 @@ export default function ShareDialog({ open, onClose, post, userId }) {
           variant="contained"
           disabled={selected.length === 0}
           onClick={handleSend}
-          sx={{ width: '90%' }}
+          sx={{
+            width: '90%',
+            bgcolor: '#ba9fe3',
+            '&:hover': {
+              bgcolor: '#a17de3',
+            }
+          }}
         >
           따로 보내기
         </Button>

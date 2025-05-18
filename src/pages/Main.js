@@ -32,6 +32,7 @@ function Main() {
   const [shareOpen, setShareOpen] = useState(false);
   const [sharePost, setSharePost] = useState(null);
   const [optionsOpenPost, setOptionsOpenPost] = useState(null);
+  const [visibleTags, setVisibleTags] = useState({});
 
   const [followingMap, setFollowingMap] = useState({});
 
@@ -74,7 +75,7 @@ function Main() {
     const parts = text.split(/([@#][a-zA-Z0-9가-힣_]+)/g); // 멘션 & 해시태그 추출
     return parts.map((part, idx) =>
       part.startsWith('@') || part.startsWith('#') ? (
-        <span key={idx} style={{ color: 'purple', fontWeight: 500 }}>{part}</span>
+        <span key={idx} style={{ color: '#a18df2', fontWeight: 500 }}>{part}</span>
       ) : (
         <span key={idx}>{part}</span>
       )
@@ -84,14 +85,14 @@ function Main() {
   const toggleFollow = async (targetUserId) => {
     const isFollowing = followingMap[targetUserId];
     try {
-      await fetch(`http://localhost:4000/follow`, {
-        method: isFollowing ? 'DELETE' : 'POST',
+      const method = isFollowing ? 'DELETE' : 'POST';
+      await fetch(`http://localhost:4000/follow/${targetUserId}`, {
+        method,
         headers: {
-          "Content-Type": "application/json",
           "authorization": "Bearer " + token
-        },
-        body: JSON.stringify({ targetUserId })
+        }
       });
+
       setFollowingMap(prev => ({
         ...prev,
         [targetUserId]: !isFollowing
@@ -149,10 +150,7 @@ function Main() {
                       ml: 1,
                       fontWeight: 'bold',
                       cursor: 'pointer',
-                      color: followingMap[post.userId] ? 'gray' : 'purple',
-                      '&:hover': {
-                        color: '#6a1b9a'
-                      }
+                      color: followingMap[post.userId] ? 'gray' : '#a18df2'
                     }}
                     onClick={() => toggleFollow(post.userId)}
                   >
@@ -173,7 +171,51 @@ function Main() {
                   image={"http://localhost:4000" + imageUrl}
                   alt="게시글 이미지"
                   sx={{ height: 600, objectFit: 'cover' }}
+                  onClick={() => {
+                    setVisibleTags(prev => ({
+                      ...prev,
+                      [post.postNo]: !prev[post.postNo]
+                    }));
+                  }}
                 />
+
+                {/* 🎯 태그된 사용자 오버레이 */}
+                {post.userTags?.length > 0 && visibleTags[post.postNo] && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      pointerEvents: 'none'
+                    }}
+                  >
+                    {post.userTags.map((tag, idx) => (
+                      <Box
+                        key={idx}
+                        sx={{
+                          position: 'absolute',
+                          top: `${tag.y * 100}%`,
+                          left: `${tag.x * 100}%`,
+                          transform: 'translate(-50%, -50%)',
+                          bgcolor: 'rgba(0,0,0,0.6)',
+                          color: 'white',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: 12,
+                          fontWeight: 'bold',
+                          pointerEvents: 'auto'
+                        }}
+                      >
+                        @{tag.userId}
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+
+                {/* 🔁 이미지 여러 장인 경우 슬라이드 버튼 */}
                 {post.images.length > 1 && (
                   <>
                     <IconButton
@@ -214,6 +256,7 @@ function Main() {
               </Box>
             )}
 
+
             {/* 인터랙션 버튼 */}
             <Box sx={{ px: 2, pt: 1 }}>
               {/* 아이콘 줄 */}
@@ -224,10 +267,29 @@ function Main() {
                     postNo={post.postNo}
                     initialLiked={post.likedByMe}
                     initialCount={likeCounts[post.postNo]}
-                    onLike={() => { /* 알림 처리 등 */ }}
-                    onLikeToggle={(newCount) =>
-                      setLikeCounts(prev => ({ ...prev, [post.postNo]: newCount }))
-                    }
+                    onLike={() => { }}
+                    onLikeToggle={(newCount, newLiked) => {
+                      setLikeCounts(prev => ({
+                        ...prev,
+                        [post.postNo]: newCount
+                      }));
+
+                      // ✅ posts 리스트 업데이트
+                      setPosts(prev =>
+                        prev.map(p =>
+                          p.postNo === post.postNo
+                            ? { ...p, likedByMe: newLiked, likeCount: newCount }
+                            : p
+                        )
+                      );
+
+                      // ✅ selectedPost도 최신 상태 반영 (안 그러면 Dialog에서 stale 상태로 뜸)
+                      setSelectedPost(prev =>
+                        prev?.postNo === post.postNo
+                          ? { ...prev, likedByMe: newLiked, likeCount: newCount }
+                          : prev
+                      );
+                    }}
                   />
                   <IconButton sx={{ ml: 0.8 }} size="small" onClick={() => {
                     setSelectedPost(post);
@@ -287,7 +349,7 @@ function Main() {
               {post.content.split('\n').length > 2 || post.content.length > 100 ? (
                 <Typography
                   variant="body2"
-                  color="primary"
+                  color="#a18df2"
                   sx={{ cursor: 'pointer', fontWeight: 500 }}
                   onClick={() =>
                     setExpandedPostNo(
@@ -391,9 +453,30 @@ function Main() {
 
       <PostDialog
         open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
+        onClose={(updatedPost) => {
+          setDialogOpen(false);
+          if (updatedPost) {
+            setPosts(prev =>
+              prev.map(p =>
+                p.postNo === updatedPost.postNo
+                  ? {
+                    ...p,
+                    likeCount: updatedPost.likeCount,
+                    likedByMe: updatedPost.likedByMe  // ✅ 이거 중요!
+                  }
+                  : p
+              )
+            );
+
+            setLikeCounts(prev => ({
+              ...prev,
+              [updatedPost.postNo]: updatedPost.likeCount
+            }));
+          }
+        }}
         post={selectedPost}
       />
+
     </Box>
   );
 }
