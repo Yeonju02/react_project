@@ -82,7 +82,7 @@
 
 ### 👤 마이페이지
 
-![image](https://github.com/user-attachments/assets/83548327-f353-45f7-b8fa-d497d2285a78)
+![image](https://github.com/user-attachments/assets/a880cd8f-99c1-4bd1-b3d0-643a82778c7f)
 ![image](https://github.com/user-attachments/assets/14488dfe-746e-49d8-ab8c-71591cb2681f)
 ![image](https://github.com/user-attachments/assets/8eda00fd-6c65-4d1e-914b-06a3c3266769)
 ![image](https://github.com/user-attachments/assets/38badea8-a447-4d41-98e1-282922c29e0f)
