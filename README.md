@@ -1,6 +1,6 @@
 # 👩 연주의 개인 프로젝트
 
-![image](https://github.com/user-attachments/assets/077027af-ea96-4436-91d2-f6294c9d368f)
+![image](https://github.com/user-attachments/assets/ff6fea2f-7102-4ef2-9407-07d94975b190)
 
 ---
 
