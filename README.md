@@ -23,10 +23,10 @@
 
 | 구분 | 기술 |
 |------|------|
-| Frontend | React, MUI, Axios, JWT |
-| Backend | Node.js, Express |
-| Database | MySQL (HeidiSQL 사용) |
-| 기타 | Multer (파일 업로드), Socket.IO (실시간 채팅) |
+| Frontend | ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black) ![MUI](https://img.shields.io/badge/MUI-007FFF?style=for-the-badge&logo=mui&logoColor=white) ![Axios](https://img.shields.io/badge/Axios-5A29E4?style=for-the-badge) ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white) |
+| Backend | ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white) ![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white) |
+| Database | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white) (HeidiSQL 사용) |
+| 기타 | ![Multer](https://img.shields.io/badge/Multer-FF8C00?style=for-the-badge) ![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?style=for-the-badge&logo=socketdotio&logoColor=white) |
 
 ---
 
