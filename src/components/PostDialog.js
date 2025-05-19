@@ -45,6 +45,33 @@ function PostDialog({ open, onClose, post }) {
   const lightPurple = '#9b59b6'; // 연보라색
   const darkPurple = '#8e44ad';  // hover 등 진한 보라
 
+  const [profileMap, setProfileMap] = useState({});
+
+  useEffect(() => {
+    if (!open || !post) return;
+
+    const userIds = new Set([
+      post.userId,
+      ...comments.flatMap(cmt => [
+        cmt.user_id,
+        ...(cmt.children?.map(reply => reply.user_id) || [])
+      ])
+    ]);
+
+    Promise.all([...userIds].map(uid =>
+      fetch(`http://localhost:4000/user/info/${uid}`)
+        .then(res => res.json())
+        .then(data => ({ userId: uid, profile_img: data.profile_img }))
+        .catch(() => ({ userId: uid, profile_img: null }))
+    )).then(results => {
+      const map = {};
+      results.forEach(({ userId, profile_img }) => {
+        map[userId] = profile_img ? `http://localhost:4000/${profile_img}` : '/default/profile.png';
+      });
+      setProfileMap(map);
+    });
+  }, [post, open, comments]);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -398,7 +425,7 @@ function PostDialog({ open, onClose, post }) {
           {/* 상단 유저 + 닫기 */}
           <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar src="/assets/profile.jpg" sx={{ mr: 1 }} />
+              <Avatar src={profileMap[post.userId] || '/default/profile.png'} sx={{ mr: 1 }} />
               <Typography
                 variant="subtitle2"
                 sx={{ cursor: 'pointer', fontWeight: 600 }}
@@ -439,7 +466,7 @@ function PostDialog({ open, onClose, post }) {
                 }}>
                   {/* 왼쪽: 댓글 내용 */}
                   <Box sx={{ display: 'flex', flex: 1 }}>
-                    <Avatar src="/assets/profile.jpg" sx={{ mr: 2, mt: 1 }} />
+                    <Avatar src={profileMap[cmt.user_id] || '/default/profile.png'} sx={{ mr: 2, mt: 1 }} />
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="body2"><b>{cmt.user_id}</b> {highlightMentionsAndTags(cmt.content)}</Typography>
                       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 0.5 }}>
@@ -568,7 +595,7 @@ function PostDialog({ open, onClose, post }) {
                 {expandedReplies[cmt.comment_no] && cmt.children?.map((reply) => (
                   <Box key={reply.comment_no} sx={{ display: 'flex', gap: 1, mt: 1, ml: 5, justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex' }}>
-                      <Avatar src="/assets/profile.jpg" sx={{ width: 26, height: 26, mr: 1 }} />
+                      <Avatar src={profileMap[reply.user_id] || '/default/profile.png'} sx={{ width: 26, height: 26, mr: 1 }} />
                       <Box>
                         <Typography variant="body2"><b>{reply.user_id}</b> {highlightMentionsAndTags(reply.content)}</Typography>
                         <Typography variant="caption">{reply.createdAt}</Typography>
@@ -735,7 +762,7 @@ function PostDialog({ open, onClose, post }) {
               <Button
                 fullWidth
                 onClick={() => {
-                  alert("수정 기능 연결 예정");
+                  alert("추후 개발 예정입니다!");
                   setOptionOpen(false);
                 }}
                 sx={{

@@ -65,7 +65,8 @@ export default function NotificationSlide({ open, onClose, sidebarWidth = 72 }) 
                   case 'like': return { color: '#ff5c8a', label: '좋아요' };
                   case 'comment': return { color: '#3498db', label: '댓글' };
                   case 'reply': return { color: '#27ae60', label: '답글' };
-                  case 'tag': return { color: '#9b59b6', label: '태그' };
+                  case 'tag': return { color: '#fbc02d', label: '태그' };
+                  case 'follow': return { color: '#7e57c2', label: '팔로우' };
                   default: return { color: '#999', label: '' };
                 }
               };
@@ -75,6 +76,21 @@ export default function NotificationSlide({ open, onClose, sidebarWidth = 72 }) 
                 <Box
                   key={noti.noti_no}
                   onClick={async () => {
+                    if (noti.type === 'follow') {
+                      // 알림 읽음 처리만
+                      await fetch(`http://localhost:4000/notification/read/${noti.noti_no}`, {
+                        method: 'POST'
+                      });
+
+                      setNotifications(prev =>
+                        prev.map(n =>
+                          n.noti_no === noti.noti_no ? { ...n, is_read: 'Y' } : n
+                        )
+                      );
+
+                      return; // 게시글 다이얼로그 띄우지 않음
+                    }
+
                     let postNo = noti.target_post;
 
                     // 댓글 또는 답글이라면 target_post가 없을 수 있으므로 댓글에서 추출
@@ -129,7 +145,11 @@ export default function NotificationSlide({ open, onClose, sidebarWidth = 72 }) 
                   }}
                 >
                   <Avatar
-                    src={noti.sender_profile || '/assets/profile.jpg'}
+                    src={
+                      noti.sender_profile
+                        ? 'http://localhost:4000/' + noti.sender_profile
+                        : '/assets/profile.jpg'
+                    }
                     sx={{ width: 40, height: 40, mr: 2 }}
                   />
                   <Box sx={{ flexGrow: 1 }}>

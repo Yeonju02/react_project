@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box, Typography, Button, TextField, IconButton, Modal, Slider, Avatar
 } from '@mui/material';
@@ -25,9 +25,24 @@ function PostAdd() {
   const [userTags, setUserTags] = useState([]);
   const [tagPos, setTagPos] = useState(null);
   const [openTagDialog, setOpenTagDialog] = useState(false);
+  const [profileImg, setProfileImg] = useState('');
 
   const token = localStorage.getItem('token');
   const userId = token ? jwtDecode(token).userId : '';
+
+  useEffect(() => {
+    if (!userId) return;
+
+    fetch('http://localhost:4000/user/info/' + userId)
+      .then(res => res.json())
+      .then(data => {
+        setProfileImg(data.profile_img);
+      })
+      .catch(err => {
+        console.error('프로필 이미지 불러오기 실패:', err);
+        setProfileImg('/default/profile.png');
+      });
+  }, [userId]);
 
   const onCropComplete = useCallback((_, area) => {
     setCroppedAreaPixels(area);
@@ -94,32 +109,6 @@ function PostAdd() {
           });
         }
 
-        // 유저 태그 저장
-        if (userTags.length > 0) {
-          await fetch('http://localhost:4000/post/user-tags', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ postNo, userTags })
-          });
-
-          // 태그 알림 전송
-          for (const tag of userTags) {
-            if (tag.userId !== userId) {
-              await fetch('http://localhost:4000/notification', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  receiver_id: tag.userId,
-                  sender_id: userId,
-                  type: 'tag',
-                  content: `${userId}님이 회원님을 게시글에 태그했습니다.`,
-                  target_post: postNo
-                })
-              });
-            }
-          }
-        }
-
         alert('게시글이 등록되었습니다.');
         setImages([]);
         setCroppedImages([]);
@@ -166,8 +155,8 @@ function PostAdd() {
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
       {/* 프로필 영역 */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <Avatar src={`http://localhost:4000/profile/${userId}.jpg`} sx={{ mr: 1 }} />
-        <Typography variant="subtitle1">@{userId}</Typography>
+        <Avatar src={`http://localhost:4000/${profileImg || '/default/profile.png'}`} sx={{mr: 1}} />
+        <Typography variant="subtitle1"> @{userId}</Typography>
       </Box>
 
       <Typography variant="h5" mb={2}>게시글 작성</Typography>

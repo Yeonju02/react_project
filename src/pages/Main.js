@@ -267,7 +267,22 @@ function Main() {
                     postNo={post.postNo}
                     initialLiked={post.likedByMe}
                     initialCount={likeCounts[post.postNo]}
-                    onLike={() => { }}
+                    onLike={() => {
+                      // 좋아요 알림 전송
+                      if (post.userId !== userId) {
+                        fetch('http://localhost:4000/notification', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            receiver_id: post.userId,
+                            sender_id: userId,
+                            type: 'like',
+                            content: `${userId}님이 회원님의 게시글을 좋아합니다.`,
+                            target_post: post.postNo
+                          })
+                        }).catch(err => console.error('좋아요 알림 실패:', err));
+                      }
+                    }}
                     onLikeToggle={(newCount, newLiked) => {
                       setLikeCounts(prev => ({
                         ...prev,

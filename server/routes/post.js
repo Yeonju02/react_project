@@ -134,7 +134,7 @@ router.post('/', upload.array('files'), async (req, res) => {
     if (taggedUsers.length > 0) {
       for (const tag of taggedUsers) {
         await db.query(`
-          INSERT INTO TBL_USER_TAG(post_no, tagged_user_id, position_x, position_y)
+          INSERT INTO TBL_POST_USER_TAG(post_no, tagged_user_id, position_x, position_y)
           VALUES (?, ?, ?, ?)`,
           [postNo, tag.userId, tag.x, tag.y]
         );
@@ -143,7 +143,7 @@ router.post('/', upload.array('files'), async (req, res) => {
           await db.query(`
             INSERT INTO TBL_NOTIFICATION(receiver_id, sender_id, type, content, target_post)
             VALUES (?, ?, 'tag', ?, ?)`,
-            [tag.userId, userId, `${userId}님이 당신을 게시글에 태그했습니다.`, postNo]
+            [tag.userId, userId, `${userId}님이 회원님을 게시글에 태그했습니다.`, postNo]
           );
         }
       }
@@ -189,6 +189,9 @@ router.delete('/:postNo', async (req, res) => {
     // 🔁 태그된 유저 삭제
     await db.query(`DELETE FROM tbl_post_user_tag WHERE post_no = ?`, [postNo]);
 
+    // 🔁 해시태그 연결 삭제 (⭐ 중요)
+    await db.query(`DELETE FROM TBL_POST_TAG WHERE post_no = ?`, [postNo]);
+
     // 🔁 이미지 삭제
     await db.query(`DELETE FROM TBL_POST_IMG WHERE post_no = ?`, [postNo]);
 
@@ -224,7 +227,7 @@ router.get('/:postNo', async (req, res) => {
     const [images] = await db.query(`
       SELECT img_path FROM TBL_POST_IMG WHERE post_no = ? ORDER BY img_no
     `, [postNo]);
-    
+
     post.images = images.map(img => img.img_path);
 
     const [[likeRow]] = await db.query(`

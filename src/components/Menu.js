@@ -30,13 +30,11 @@ export default function Menu({ unreadCount, setUnreadCount }) {
     const token = localStorage.getItem('token');
     const userId = token ? JSON.parse(atob(token.split('.')[1])).userId : '';
     if (!userId) return;
-
     fetch('http://localhost:4000/user/info/' + userId)
       .then(res => res.json())
       .then((data) => {
-        console.log(data.profile_img)
         setProfileImg(data.profile_img)
-      }); // ← 서버에서 URL 받아와 저장
+      });
   }, []);
 
 
@@ -267,25 +265,32 @@ export default function Menu({ unreadCount, setUnreadCount }) {
       >
         {/* 상단 메뉴 */}
         <MenuItem
-          onClick={handleMenuClose}
-          sx={{
-            backgroundColor: 'transparent'
+          onClick={() => {
+            alert("추후 개발 예정입니다!");
+            handleMenuClose();
           }}
         >
           <Typography fontSize={14}>모드 전환</Typography>
         </MenuItem>
 
-        <MenuItem onClick={() => { handleMenuClose(); handleReport(); }}>
+        <MenuItem
+          onClick={() => {
+            alert("추후 개발 예정입니다!");
+            handleMenuClose();
+          }}
+        >
           <Typography fontSize={14}>문제 신고</Typography>
         </MenuItem>
 
-        {/* 구분선 */}
-        <Box sx={{ my: 0.5, borderTop: '1px solid #eee' }} />
-
-        {/* 하단 메뉴 */}
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem
+          onClick={() => {
+            alert("추후 개발 예정입니다!");
+            handleMenuClose();
+          }}
+        >
           <Typography fontSize={14} sx={{ color: 'red' }}>회원 탈퇴</Typography>
         </MenuItem>
+
         <MenuItem onClick={() => { handleMenuClose(); handleLogout(); }}>
           <Typography fontSize={14}>로그아웃</Typography>
         </MenuItem>

@@ -71,10 +71,28 @@ function UserPage() {
   const handleFollowToggle = () => {
     const url = `http://localhost:4000/follow/${userId}`;
     const method = isFollowing ? 'DELETE' : 'POST';
+
     fetch(url, { method, headers })
       .then(res => res.json())
       .then(data => {
-        if (data.success) setIsFollowing(!isFollowing);
+        if (data.success) {
+          setIsFollowing(!isFollowing);
+
+          // ✅ 팔로우 성공 시 알림 보내기
+          if (!isFollowing && myId !== userId) {
+            fetch('http://localhost:4000/notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                receiver_id: userId,
+                sender_id: myId,
+                type: 'follow',
+                content: `${myId}님이 회원님을 팔로우하기 시작했습니다.`,
+                target_post: null
+              })
+            }).catch(err => console.error('팔로우 알림 실패:', err));
+          }
+        }
       });
   };
 
