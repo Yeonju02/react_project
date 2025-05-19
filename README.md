@@ -80,6 +80,14 @@
 
 - 팔로우, 좋아요, 댓글, 언급 시 실시간 알림
 
+### 🔎 검색
+
+![image](https://github.com/user-attachments/assets/7d561a1d-d44c-498b-9a27-39487739543b)
+![image](https://github.com/user-attachments/assets/d766b0c2-381b-464c-926e-4422f3ebf518)
+
+- '게시글', '사용자' 탭으로 구분하여 검색 가능  
+- 검색 중에는 로딩 인디케이터 표시  
+
 ### 👤 마이페이지
 
 ![image](https://github.com/user-attachments/assets/a880cd8f-99c1-4bd1-b3d0-643a82778c7f)
