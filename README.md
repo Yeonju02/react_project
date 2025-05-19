@@ -35,34 +35,58 @@
 ### 🔐 로그인 / 회원가입
 
 ![image](https://github.com/user-attachments/assets/f467dcfa-ff7a-40de-abc0-26e84e36f2c0)
+![image](https://github.com/user-attachments/assets/6e95f3fe-de2e-42dc-aacb-9cacfe2915e2)
 
 - JWT를 이용한 인증 및 토큰 저장
 - 로그인 실패 시 에러 메시지 출력
 
 ### 🏠 메인 피드
+
+![image](https://github.com/user-attachments/assets/f07d7c2d-1a1a-4618-8636-207df1d2c6bf)
+
 - 게시글 목록 조회 (이미지 여러 장 포함)
 - 좋아요, 댓글, 저장, 공유 기능
 - 해시태그, 사용자 태그 기능
 
 ### 📝 게시글 작성
+
+![image](https://github.com/user-attachments/assets/13d9a20e-fec0-4bba-871a-46ac393dd020)
+![image](https://github.com/user-attachments/assets/76146f2b-fe79-4a4c-a8e0-a19199c24cae)
+![image](https://github.com/user-attachments/assets/8eaac756-9924-4f18-8272-a7e97ee22e74)
+
 - 이미지 다중 업로드 & 크롭 기능
 - 사용자 태그 & 해시태그 등록
 - 작성 후 메인 피드에 반영
 
 ### 💬 댓글 / 대댓글
+
+![image](https://github.com/user-attachments/assets/a2a3cbfa-1818-4526-9f0f-67431890ce51)
+
 - 실시간 등록 및 삭제
 - 대댓글 펼치기/숨기기
 - 좋아요 기능 포함
 
 ### 📬 DM (Direct Message)
+
+![image](https://github.com/user-attachments/assets/499da885-d191-4d34-beb3-5d0b8b64510c)
+
 - 실시간 채팅 (Socket.IO)
 - 채팅방 목록, 새 대화 생성
 - 게시글 공유 기능
 
 ### 🔔 알림
+
+![image](https://github.com/user-attachments/assets/8e4aafad-db39-4d8c-8f34-3568ec8412e7)
+
 - 팔로우, 좋아요, 댓글, 언급 시 실시간 알림
 
 ### 👤 마이페이지
+
+![image](https://github.com/user-attachments/assets/83548327-f353-45f7-b8fa-d497d2285a78)
+![image](https://github.com/user-attachments/assets/14488dfe-746e-49d8-ab8c-71591cb2681f)
+![image](https://github.com/user-attachments/assets/8eda00fd-6c65-4d1e-914b-06a3c3266769)
+![image](https://github.com/user-attachments/assets/38badea8-a447-4d41-98e1-282922c29e0f)
+
 - 내가 쓴 글, 저장한 글, 태그된 게시글 보기
 - 팔로우 / 팔로잉 목록 확인
 - 프로필 편집 기능
