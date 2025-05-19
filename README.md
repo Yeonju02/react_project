@@ -1,8 +1,7 @@
 # 🖼️ 메인 스크린샷
 
-![Main Screenshot](./screenshots/main.png)
+![image](https://github.com/user-attachments/assets/077027af-ea96-4436-91d2-f6294c9d368f)
 
----
 
 ## 📌 프로젝트 소개
 
