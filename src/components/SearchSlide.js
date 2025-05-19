@@ -186,7 +186,7 @@ function SearchSlide({ open, onClose, sidebarWidth = 72 }) {
                   </>
                 ) : (
                   <>
-                    <Avatar src={item.profile_img || "/assets/profile.jpg"} />
+                    <Avatar src={item.profile_img ? "http://localhost:4000/" + item.profile_img : "/default/profile.png"} />
                     <Box sx={{ flexGrow: 1 }}>
                       <Typography fontWeight="bold">{item.user_id}</Typography>
                       <Typography variant="caption" color="textSecondary">{item.name}</Typography>
