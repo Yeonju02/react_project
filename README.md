@@ -1,70 +1,82 @@
-# Getting Started with Create React App
+# 🖼️ 메인 스크린샷
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+![Main Screenshot](./screenshots/main.png)
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 📌 프로젝트 소개
 
-### `npm start`
+이 프로젝트는 [여기에 간단한 설명 입력]한 웹 애플리케이션입니다.  
+[예: 인스타그램의 주요 기능들을 클론하여 구현한 SNS 웹 서비스입니다.]
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+주요 목표는 **사용자 친화적인 UI/UX**, **RESTful API**, 그리고 **실시간 상호작용** 기능 구현이었습니다.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## ⏰ 개발 기간
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **시작일**: 2025.04.01  
+- **종료일**: 2025.05.15  
+- **총 개발 기간**: 약 6주  
+- **참여 인원**: 1인 / 팀 프로젝트 (자유롭게 작성)
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 💻 사용 언어 & 기술 스택
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+| 구분 | 기술 |
+|------|------|
+| Frontend | React, MUI, Axios, JWT |
+| Backend | Node.js, Express |
+| Database | MySQL (HeidiSQL 사용) |
+| 기타 | Multer (파일 업로드), Socket.IO (실시간 채팅) |
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## 📄 페이지별 주요 기능
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 🔐 로그인 / 회원가입
+- JWT를 이용한 인증 및 토큰 저장
+- 로그인 실패 시 에러 메시지 출력
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### 🏠 메인 피드
+- 게시글 목록 조회 (이미지 여러 장 포함)
+- 좋아요, 댓글, 저장, 공유 기능
+- 해시태그, 사용자 태그 기능
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### 📝 게시글 작성
+- 이미지 다중 업로드 & 크롭 기능
+- 사용자 태그 & 해시태그 등록
+- 작성 후 메인 피드에 반영
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 💬 댓글 / 대댓글
+- 실시간 등록 및 삭제
+- 대댓글 펼치기/숨기기
+- 좋아요 기능 포함
 
-## Learn More
+### 📬 DM (Direct Message)
+- 실시간 채팅 (Socket.IO)
+- 채팅방 목록, 새 대화 생성
+- 게시글 공유 기능
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 🔔 알림
+- 팔로우, 좋아요, 댓글, 언급 시 실시간 알림
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### 👤 마이페이지
+- 내가 쓴 글, 저장한 글, 태그된 게시글 보기
+- 팔로우 / 팔로잉 목록 확인
+- 프로필 편집 기능
 
-### Code Splitting
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## 💬 프로젝트 후기
 
-### Analyzing the Bundle Size
+> 😎 **[예시]**  
+이번 프로젝트를 통해 React와 Node.js를 활용한 **전체적인 웹 서비스 개발 흐름**을 경험할 수 있었습니다.  
+특히 실시간 채팅과 알림 시스템 구현은 처음이었기에 많은 도전이 되었고, 사용자 중심 UI/UX 구성의 중요성도 크게 느꼈습니다.  
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+> 🛠️ 협업을 고려한 코드 구조, 커밋 컨벤션의 중요성을 실감했고, 추후 유지보수와 기능 확장성에도 중점을 두게 되었습니다.
 
-### Making a Progressive Web App
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+> ✨ 필요하면 배포 주소, 시연 영상 링크, 기술 블로그 링크도 마지막에 추가해도 좋아!
