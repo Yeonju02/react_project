@@ -1,4 +1,4 @@
-# 👩 연주의 개인 프로젝트
+# 👩 개인 프로젝트 - React
 
 ![image](https://github.com/user-attachments/assets/ff6fea2f-7102-4ef2-9407-07d94975b190)
 
